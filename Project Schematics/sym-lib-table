@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name "arduino-library")(type "KiCad")(uri "${KIPRJMOD}/Symbol/arduino-library.kicad_sym")(options "")(descr ""))
+  (lib (name "Project")(type "KiCad")(uri "${KIPRJMOD}/Project.kicad_sym")(options "")(descr ""))
+)

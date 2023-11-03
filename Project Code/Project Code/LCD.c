@@ -8,7 +8,6 @@
 #endif
 
 #include <util/delay.h>
-
 #include "lcd.h"
 
 
