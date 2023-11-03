@@ -14,5 +14,7 @@ mTimer.c
 
 pwm.c
 
+sensor.c
+
 stepper_motor.c
 

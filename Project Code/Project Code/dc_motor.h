@@ -8,11 +8,9 @@
 #define CW			1
 #define CCW			0
 
-volatile unsigned int switch_direction_flag;
 volatile unsigned int kill_flag;
 
 void init_dc_moter();
-void switch_direction();
 void disable_dc_motor();
 
 #endif /* DC_MOTOR_H_ */

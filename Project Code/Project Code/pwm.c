@@ -2,6 +2,7 @@
 #include "lcd.h"
 
 /****** PWM ******/
+
 void init_pwm(){
 	/* Step 1: Set Timer 0 to Fast PWM mode */
 	TCCR0A |= (_BV(WGM01) | _BV(WGM00));	// OCRA0 updated at TOP | TOV Flag set on MAX | TOP = 0xFF
@@ -20,16 +21,8 @@ void init_pwm(){
 	
 	/* Step 6: set OC0A as output (page 76) */
 	DDRB |= _BV(DDB7);						// OC0A: PORTB pin 7 is the PWM output A for Timer/Counter 0
-	
-	display_pwm();
 }
 
 void change_pwm_speed(unsigned int speed){
 	OCR0A = speed;
-}
-
-void display_pwm(){
-	LCDWriteStringXY(0, 1, "PWM: ");
-	LCDWriteIntXY(5, 1, (OCR0A + 1)*100/256, 3);
-	LCDWriteStringXY(9, 1, "%");
 }

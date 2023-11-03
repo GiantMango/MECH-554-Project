@@ -7,7 +7,6 @@
 #endif
 
 #include <util/delay.h>
-
 #include "myutils.h"
 
 #ifndef _LCD_H

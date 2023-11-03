@@ -3,7 +3,5 @@
 
 void init_pwm();
 void change_pwm_speed(unsigned int speed);
-void display_pwm();
-
 
 #endif /* PWM_H_ */

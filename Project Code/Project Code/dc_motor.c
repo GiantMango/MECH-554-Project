@@ -8,27 +8,9 @@ void init_dc_moter(){
 	DDRB |= (_BV(DDB0) | _BV(DDB1) | _BV(DDB2) | _BV(DDB3));	// set as output pins to control DC motor
 	PORTB = (PORTB & 0x10) | DC_Brake;							// motor driver enable pins	& brake to Vcc
 	PORTB &= ~(_BV(PB0));  										// motor driving initialize	1 1 1 0
-	LCDWriteStringXY(0, 0, "INIT - Forward");
 	PORTL = PORTB << 4;
 }
 
-
-/* Switch DC Motor Direction */
-void switch_direction(){
-	LCDClear();
-	if((PORTB & 0x01) == 0x00){
-		PORTB |= DC_Brake;
-		mTimer(5);
-		PORTB ^= (_BV(PB1));
-		LCDWriteStringXY(0, 0, "Backward");
-		} else {
-		PORTB |= DC_Brake;
-		mTimer(5);
-		PORTB ^= (_BV(PB0));
-		LCDWriteStringXY(0, 0, "Forward");
-	}
-	PORTL = PORTB << 4;
-}
 
 /* Disable DC Motor */
 void disable_dc_motor(){
