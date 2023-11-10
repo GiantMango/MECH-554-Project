@@ -81,14 +81,12 @@ void enqueue(link **h, link **t, link **nL){
 void dequeue(link **h, link **t, link **deQueuedLink){
 	*deQueuedLink = *h;	// Will set to NULL if Head points to NULL
 	/* Ensure it is not an empty queue */
-	if (((*h)->next) != NULL){ // when there's only 1 link in the node.
-		*h = (*h)->next;	
+	if (*h != NULL){
+		*h = (*h)->next; // NULL when there's only 1 thing in the list	
 	}/*if*/
-	else{ // 1 node or 0 node
-		*h = NULL;
+	if (*h == NULL){
 		*t = NULL;
 	}
-	return;
 }/*dequeue*/
 
 
