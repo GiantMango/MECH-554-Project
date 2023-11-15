@@ -3,10 +3,10 @@
 
 /* GLOBAL VARIABLES */
 volatile unsigned int ADC_result;
-volatile unsigned char ADC_result_flag;
 volatile unsigned int ADC_min_min = 1023;
 volatile unsigned int ADC_max_min = 0;
 volatile unsigned int ADC_curr_min = 1023;
+volatile unsigned char ADC_counter;
 
 /* FUNCTIONS */
 void init_adc();
