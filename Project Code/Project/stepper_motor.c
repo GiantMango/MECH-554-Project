@@ -27,39 +27,22 @@ void init_stepper_motor(){
 
 
 void StepperMotor_CW (int num_steps){
-    while(num_steps > 0){
-        STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[num_steps%4];
-        num_steps -= 1;
+    int i = 0;
+    while(i < num_steps){
+        STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[(current_step+i)%4];
+        i += 1;
+				mTimer(20);
     }
 }
 
 // TODO: Optimize StepperMotor_CW and CCW
 void StepperMotor_CCW(int num_steps){
-	for (int i = num_steps; i > 0; i--){
-		switch (current_step)
-		{
-			case(1):
-				PORTA = STEP2;
-				current_step = 2;
+    int i = 0;
+    while(i < num_steps){
+        STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[3 - (current_step+i)%4];
+        i += 1;
 				mTimer(20);
-				break;
-			case(2):
-				PORTA = STEP3;
-				current_step = 3;
-				mTimer(20);
-				break;
-			case(3):
-				PORTA = STEP4;
-				current_step = 4;
-				mTimer(20);
-				break;
-			case(4):
-				PORTA = STEP1;
-				current_step = 1;
-				mTimer(20);
-				break;
 		}
-	}
 }
 
 
