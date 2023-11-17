@@ -27,7 +27,7 @@
 
 #define ALUMINUM_STEEL_BOUND		100
 #define STEEL_WHITE_BOUND				800
-#define WHITE_BLACK_BOUND				920
+#define WHITE_BLACK_BOUND				915
 
 /* GLOBAL VARIABLES */
 volatile unsigned char temp = 0;
@@ -95,6 +95,9 @@ int main(void)
 
 	run_dc_motor();
 
+	int pos = 0;
+	int pos2 = 0;
+
 	while(1){			
 
 		PORTL = 0x10;
@@ -128,6 +131,9 @@ int main(void)
 
 			run_dc_motor();
 			mTimer(500);
+
+			LCDWriteIntXY(pos, 1, head->e.itemMaterial, 1);
+			pos += 2;
 
 			dequeue(&head, &tail, &rtnLink);
 			free(rtnLink);
@@ -170,30 +176,35 @@ int main(void)
 			if(ADC_curr_min >= WHITE_BLACK_BOUND){
 				newLink->e.itemMaterial = BLACK; // 1
 				black_counter += 1;
+				LCDWriteStringXY(pos2, 0, "B");
 
 			} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
 				newLink->e.itemMaterial = WHITE; // 3
 				white_counter += 1;
+				LCDWriteStringXY(pos2, 0, "W");
 
 			} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
 				newLink->e.itemMaterial = STEEL; // 2
 				steel_counter += 1;
-
+				LCDWriteStringXY(pos2, 0, "S");
+				
 			} else {
 				newLink->e.itemMaterial = ALUMINUM; // 4
 				aluminum_counter += 1;
+				LCDWriteStringXY(pos2, 0, "A");
 			}
 
+			pos2 += 2;
 
 			enqueue(&head, &tail, &newLink);
 
 			
-			LCDWriteIntXY(0,0,item_counter,3);
-			LCDWriteIntXY(5,0,ADC_counter,5);
-			LCDWriteIntXY(12,0,newLink->e.itemMaterial, 1);
-			LCDWriteIntXY(0,1,ADC_min_min,4);
-			LCDWriteIntXY(5,1,ADC_max_min,4);
-			LCDWriteIntXY(10,1,ADC_curr_min,4);
+			// LCDWriteIntXY(0,0,item_counter,3);
+			// LCDWriteIntXY(5,0,ADC_counter,5);
+			// LCDWriteIntXY(12,0,newLink->e.itemMaterial, 1);
+			// LCDWriteIntXY(0,1,ADC_min_min,4);
+			// LCDWriteIntXY(5,1,ADC_max_min,4);
+			// LCDWriteIntXY(10,1,ADC_curr_min,4);
 			
 			item_adc_ready = 0;
 			ADC_counter = 0;

@@ -47,6 +47,7 @@ void StepperMotor_CW (int num_steps){
         i += 1;
 				mTimer(20);
     }
+		current_step = (current_step+i)%4;
 }
 
 
@@ -57,6 +58,7 @@ void StepperMotor_CCW(int num_steps){
         i += 1;
 				mTimer(20);
 		}
+		current_step = 3 - (current_step+i)%4;
 }
 
 // TODO: Accel and deccel
