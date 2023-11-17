@@ -7,6 +7,8 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "lcd.h"
 #include "mTimer.h"
 #include "adc.h"
@@ -17,7 +19,17 @@
 #include "stepper_motor.h"
 
 /* Material Reflection Bounds */
+#define ALUMINUM		1
+#define STEEL				2
+#define WHITE				3
+#define BLACK				4
 
+//material = [ALUMINUM, STEEL, WHITE, BLACK]
+//rotational = [DEG90, -DEG90, DEG180, 0]
+
+#define ALUMINUM_STEEL_BOUND		100
+#define STEEL_WHITE_BOUND				800
+#define WHITE_BLACK_BOUND				920
 
 /* GLOBAL VARIABLES */
 volatile unsigned char temp = 0;
@@ -59,33 +71,61 @@ int main(void)
 	/* Initialize ADC */
 	init_adc();
 	free_running_adc();
-	
+
 	/* Initialize DC Motor */
 	init_pwm();
 	change_pwm_speed(60);
 	init_dc_motor();
-	run_dc_motor();
-	
-	/* Initialize Stepper Motor and Plate Position */
-	//init_stepper_motor();
-	current_plate = BLACK;
 	
 	sei();
 
+	/* Initialize Stepper Motor and Plate Position */
+	init_stepper_motor();
+	current_plate = BLACK;
 
-	//sei();
+	setup(&head, &tail);
+
+	run_dc_motor();
 
 	while(1){			
 
-		PORTL = 0x10;
-		LCDWriteIntXY(10,0,EX,1);
+		 PORTL = 0x80;
 
 		/* EX HIGH: object not at exit */
 		while(!EX){ // when something at the exit stop
 			PORTL = 0x20;
 			brake_dc_motor();
+			LCDWriteIntXY(14,0,head->e.itemMaterial, 1);
+
+			switch(head->e.itemMaterial){
+				case(ALUMINUM):
+					PORTL = 0x10;
+					StepperMotor_CW(DEG90);
+					break;
+				
+				case(STEEL):
+					PORTL = 0x20;
+					StepperMotor_CCW(DEG90);
+					break;
+				
+				case(WHITE):
+					PORTL = 0x30;
+					StepperMotor_CCW(DEG180);
+					break;
+				
+				case(BLACK):
+					PORTL = 0x90;
+					break;
+			}
+
+			PORTL = 0xA0;
+			run_dc_motor();
+			mTimer(600);
+
+			dequeue(&head, &tail, &rtnLink);
+			free(rtnLink);
 		}
-		run_dc_motor();
+		
 
 		while(OR){ // when object is at the reflective sensor
 			start_conversion();
@@ -103,6 +143,8 @@ int main(void)
 		}
 
 		if(item_adc_ready){
+			initLink(&newLink); // creating a new link in the linked list
+
 			disable_adc();
 			item_counter += 1;
 
@@ -118,14 +160,28 @@ int main(void)
 				}
 			}
 
+			if(ADC_curr_min >= WHITE_BLACK_BOUND){
+				newLink->e.itemMaterial = BLACK; // 4
+			} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
+				newLink->e.itemMaterial = WHITE; // 3
+			} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
+				newLink->e.itemMaterial = STEEL; // 2
+			} else {
+				newLink->e.itemMaterial = ALUMINUM; // 1
+			}
+
+			enqueue(&head, &tail, &newLink);
+
 			LCDWriteIntXY(0,0,item_counter,3);
 			LCDWriteIntXY(5,0,ADC_counter,5);
+			LCDWriteIntXY(12,0,newLink->e.itemMaterial, 1);
 			LCDWriteIntXY(0,1,ADC_min_min,4);
 			LCDWriteIntXY(5,1,ADC_max_min,4);
 			LCDWriteIntXY(10,1,ADC_curr_min,4);
 			
 			item_adc_ready = 0;
 			ADC_counter = 0;
+			ADC_curr_min = 1023;
 
 		}
 

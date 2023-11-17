@@ -3,14 +3,7 @@
 
 /* LinkedQueue.h */
 
-#define ALUMINUM		1
-#define STEEL				2
-#define WHITE				3
-#define BLACK				4
 
-#define ALUMINUM_STEEL_BOUND		100
-#define STEEL_WHITE_BOUND				800
-#define WHITE_BLACK_BOUND				925
 
 
 /* Type definitions */
