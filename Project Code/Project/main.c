@@ -19,13 +19,11 @@
 #include "stepper_motor.h"
 
 /* Material Reflection Bounds */
-#define ALUMINUM		1
-#define STEEL				2
-#define WHITE				3
-#define BLACK				4
+#define BLACK				0
+#define STEEL				1
+#define WHITE				2
+#define ALUMINUM		3
 
-//material = [ALUMINUM, STEEL, WHITE, BLACK]
-//rotational = [DEG90, -DEG90, DEG180, 0]
 
 #define ALUMINUM_STEEL_BOUND		100
 #define STEEL_WHITE_BOUND				800
@@ -41,6 +39,16 @@ volatile unsigned char item_adc_ready;
 volatile unsigned char reset_flag;
 volatile unsigned char current_plate;
 volatile unsigned char next_plate;
+volatile unsigned char aluminum_counter;
+volatile unsigned char steel_counter;
+volatile unsigned char white_counter;
+volatile unsigned char black_counter;
+
+/* default rotation */							  	//|  B  |  A  |  W  |  S  |
+volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, // current plate black
+																				 {NEG_DEG90, 0, DEG90, DEG180}, // current plate aluminum
+																			 	 {DEG180, NEG_DEG90, 0 ,DEG90}, // current plate white
+																			 	 {DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
 
 /* Variable Declaration */
 link *head;			/* The ptr to the head of the queue */
@@ -89,38 +97,37 @@ int main(void)
 
 	while(1){			
 
-		 PORTL = 0x80;
+		PORTL = 0x10;
 
 		/* EX HIGH: object not at exit */
 		while(!EX){ // when something at the exit stop
 			PORTL = 0x20;
-			brake_dc_motor();
-			LCDWriteIntXY(14,0,head->e.itemMaterial, 1);
+			brake_dc_motor();			
 
 			switch(head->e.itemMaterial){
 				case(ALUMINUM):
-					PORTL = 0x10;
-					StepperMotor_CW(DEG90);
+					StepperMotor_Rotate(rotations[current_plate][ALUMINUM]);
+					current_plate = ALUMINUM;
 					break;
 				
 				case(STEEL):
-					PORTL = 0x20;
-					StepperMotor_CCW(DEG90);
+					StepperMotor_Rotate(rotations[current_plate][STEEL]);
+					current_plate = STEEL;
 					break;
 				
 				case(WHITE):
-					PORTL = 0x30;
-					StepperMotor_CCW(DEG180);
+					StepperMotor_Rotate(rotations[current_plate][WHITE]);
+					current_plate = WHITE;
 					break;
 				
 				case(BLACK):
-					PORTL = 0x90;
+					StepperMotor_Rotate(rotations[current_plate][BLACK]);
+					current_plate = BLACK;
 					break;
 			}
 
-			PORTL = 0xA0;
 			run_dc_motor();
-			mTimer(600);
+			mTimer(500);
 
 			dequeue(&head, &tail, &rtnLink);
 			free(rtnLink);
@@ -129,7 +136,7 @@ int main(void)
 
 		while(OR){ // when object is at the reflective sensor
 			start_conversion();
-			PORTL = 0x80;
+			PORTL = 0xF0;
 	
 			if(ADC_result_flag){
 				if(ADC_result < ADC_curr_min){
@@ -161,17 +168,26 @@ int main(void)
 			}
 
 			if(ADC_curr_min >= WHITE_BLACK_BOUND){
-				newLink->e.itemMaterial = BLACK; // 4
+				newLink->e.itemMaterial = BLACK; // 1
+				black_counter += 1;
+
 			} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
 				newLink->e.itemMaterial = WHITE; // 3
+				white_counter += 1;
+
 			} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
 				newLink->e.itemMaterial = STEEL; // 2
+				steel_counter += 1;
+
 			} else {
-				newLink->e.itemMaterial = ALUMINUM; // 1
+				newLink->e.itemMaterial = ALUMINUM; // 4
+				aluminum_counter += 1;
 			}
+
 
 			enqueue(&head, &tail, &newLink);
 
+			
 			LCDWriteIntXY(0,0,item_counter,3);
 			LCDWriteIntXY(5,0,ADC_counter,5);
 			LCDWriteIntXY(12,0,newLink->e.itemMaterial, 1);

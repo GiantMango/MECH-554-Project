@@ -17,12 +17,14 @@
 
 #define INIT_STEP             2
 
+#define NEG_DEG90             -50
 #define DEG90                 50
 #define DEG180                100
 
 volatile unsigned char plate_ready_flag;
 
 void init_stepper_motor();
+void StepperMotor_Rotate(int num_steps);
 void StepperMotor_CW(int num_steps);
 void StepperMotor_CCW(int num_steps);
 

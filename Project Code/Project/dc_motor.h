@@ -9,8 +9,6 @@
 #define DC_FORWARD      0x0B
 #define DC_BACKWARD     0x0E
 
-
-
 volatile unsigned int kill_flag;
 
 void init_dc_motor();

@@ -6,10 +6,12 @@
 #include "lcd.h"
 
 /* GLOBAL VARIABLES */
-
 volatile unsigned char current_step;
 volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
 volatile unsigned char half_steps[8] = {STEP05, STEP1, STEP15, STEP2, STEP25, STEP3, STEP35, STEP4};
+
+
+
 
 /* Initialize Stepper Motor to Black */
 void init_stepper_motor(){
@@ -29,6 +31,15 @@ void init_stepper_motor(){
 }
 
 
+void StepperMotor_Rotate (int num_steps){
+		if(num_steps > 0){
+			StepperMotor_CCW(num_steps);
+		} else if (num_steps < 0) {
+			StepperMotor_CW(-num_steps);
+		} // do nothing if num_steps = 0
+}
+
+
 void StepperMotor_CW (int num_steps){
     int i = 0;
     while(i < num_steps){
@@ -36,7 +47,6 @@ void StepperMotor_CW (int num_steps){
         i += 1;
 				mTimer(20);
     }
-		plate_ready_flag = 1;
 }
 
 
@@ -47,7 +57,6 @@ void StepperMotor_CCW(int num_steps){
         i += 1;
 				mTimer(20);
 		}
-		plate_ready_flag = 1;
 }
 
 // TODO: Accel and deccel
