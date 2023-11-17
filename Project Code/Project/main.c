@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "lcd.h"
-#include "mTimer.h"
+#include "timer.h"
 #include "adc.h"
 #include "pwm.h"
 #include "dc_motor.h"

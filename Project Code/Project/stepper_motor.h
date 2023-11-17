@@ -21,6 +21,10 @@
 #define DEG90                 50
 #define DEG180                100
 
+#define MAX_SPEED             3300  // pulse per second (pps) (Hz)
+#define ACCEL
+#define DECCEL
+
 volatile unsigned char plate_ready_flag;
 
 void init_stepper_motor();

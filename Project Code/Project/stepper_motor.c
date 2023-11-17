@@ -1,7 +1,7 @@
 ﻿#include <avr/io.h>
 #include <avr/interrupt.h>
 #include "stepper_motor.h"
-#include "mTimer.h"
+#include "timer.h"
 #include "sensor.h"
 #include "lcd.h"
 

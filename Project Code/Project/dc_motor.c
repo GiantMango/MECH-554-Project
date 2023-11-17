@@ -2,7 +2,7 @@
 #include <avr/interrupt.h>
 #include "dc_motor.h"
 #include "lcd.h"
-#include "mTimer.h"
+#include "timer.h"
 
 
 

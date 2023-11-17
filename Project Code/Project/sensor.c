@@ -15,7 +15,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "sensor.h"
-#include "mTimer.h"
+#include "timer.h"
 
 void init_sensors(){
 
