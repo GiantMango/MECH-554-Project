@@ -15,11 +15,11 @@ void init_stepper_motor(){
 
 	DDRA |= (_BV(PA0) | _BV(PA1) | _BV(PA2) | _BV(PA3) | _BV(PA4) | _BV(PA5));
 
-	int temp = 0;
+	int i = 0;
 
-	while(!HE){ // HE: active low
-		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp % 4];
-		temp += 1;
+	while(HE){ // HE: active low
+		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[i % 4];
+		i += 1;
 	}
 
 	current_step = INIT_STEP;
@@ -35,7 +35,7 @@ void StepperMotor_CW (int num_steps){
     }
 }
 
-// TODO: Optimize StepperMotor_CW and CCW
+
 void StepperMotor_CCW(int num_steps){
     int i = 0;
     while(i < num_steps){
@@ -44,5 +44,8 @@ void StepperMotor_CCW(int num_steps){
 				mTimer(20);
 		}
 }
+
+// TODO: Accel and deccel
+
 
 

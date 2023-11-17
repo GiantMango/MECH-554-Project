@@ -6,7 +6,7 @@
 void init_adc(){
 	
 	EIMSK |= (_BV(INT2));									// enable INT2
-	EICRA |= (_BV(ISC21) | _BV(ISC20));		// rising edge trigger
+	EICRA |= (_BV(ISC21) | _BV(ISC20));		// falling edge trigger
 	
 	/* Config ADC: default ADC input is ADC0 in PORTF 0 (Single Conversion) */
 	ADCSRA |= _BV(ADEN);					// enable ADC | ADEN: ADC Enable
@@ -16,18 +16,26 @@ void init_adc(){
 } // end init_adc
 
 /* Start ADC Conversion */
-void start_adc(){
+void start_conversion(){
 	sei();		// enable global interrupt
 	/* Initialize ADC and start one conversion at the beginning */
 	ADCSRA |= _BV(ADSC);					// ADSC: ADC Start Conversion Bit
 } // end start_adc
 
 /* Stop ADC Conversion */
-void stop_adc(){
+void stop_conversion(){
 	ADCSRA &= ~(_BV(ADSC));		// clear ADSC
 	cli();
 }// end stop_adc
 
 void free_running_adc(){
 	ADCSRA |= _BV(ADATE);					// ADATE: ADC Auto Trigger Enable
+}
+
+void disable_adc(){
+	ADCSRA &= ~_BV(ADEN);
+}
+
+void enable_adc(){
+	ADCSRA |= _BV(ADEN);
 }

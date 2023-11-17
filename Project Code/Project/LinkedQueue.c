@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <avr/io.h>
-#include "mTimer.h"
 #include "LinkedQueue.h" 	/* This is the attached header file, which cleans things up */
 
 /**************************************************************************************
