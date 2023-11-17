@@ -31,7 +31,7 @@ void init_stepper_motor(){
 }
 
 
-void StepperMotor_Rotate (int num_steps){
+void StepperMotor_Rotate(int num_steps){
 		if(num_steps > 0){
 			StepperMotor_CCW(num_steps);
 		} else if (num_steps < 0) {
@@ -40,7 +40,7 @@ void StepperMotor_Rotate (int num_steps){
 }
 
 
-void StepperMotor_CW (int num_steps){
+void StepperMotor_CW(int num_steps){
     int i = 0;
     while(i < num_steps){
         STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[(current_step+i)%4];

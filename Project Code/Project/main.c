@@ -27,7 +27,9 @@
 
 #define ALUMINUM_STEEL_BOUND		100
 #define STEEL_WHITE_BOUND				800
-#define WHITE_BLACK_BOUND				915
+#define WHITE_BLACK_BOUND				898
+
+#define TOTAL_ITEM								4
 
 /* GLOBAL VARIABLES */
 volatile unsigned char temp = 0;
@@ -43,6 +45,7 @@ volatile unsigned char aluminum_counter;
 volatile unsigned char steel_counter;
 volatile unsigned char white_counter;
 volatile unsigned char black_counter;
+volatile unsigned char task_complete_flag;
 
 /* default rotation */							  	//|  B  |  A  |  W  |  S  |
 volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, // current plate black
@@ -131,12 +134,21 @@ int main(void)
 
 			run_dc_motor();
 			mTimer(500);
+			item_counter += 1;
 
 			LCDWriteIntXY(pos, 1, head->e.itemMaterial, 1);
 			pos += 2;
 
 			dequeue(&head, &tail, &rtnLink);
 			free(rtnLink);
+
+			while(item_counter == TOTAL_ITEM){
+				disable_dc_motor();
+				PORTL = 0xF0;
+				mTimer(200);
+				PORTL = 0x00;
+				mTimer(200);
+			}
 		}
 		
 
@@ -159,19 +171,6 @@ int main(void)
 			initLink(&newLink); // creating a new link in the linked list
 
 			disable_adc();
-			item_counter += 1;
-
-			if(item_counter == 1){
-				ADC_min_min = ADC_curr_min;
-				ADC_max_min = ADC_curr_min;
-			} else {
-				if(ADC_min_min > ADC_curr_min){
-					ADC_min_min = ADC_curr_min;
-				}
-				if(ADC_max_min < ADC_curr_min){
-					ADC_max_min = ADC_curr_min;
-				}
-			}
 
 			if(ADC_curr_min >= WHITE_BLACK_BOUND){
 				newLink->e.itemMaterial = BLACK; // 1
@@ -204,20 +203,14 @@ int main(void)
 			// LCDWriteIntXY(12,0,newLink->e.itemMaterial, 1);
 			// LCDWriteIntXY(0,1,ADC_min_min,4);
 			// LCDWriteIntXY(5,1,ADC_max_min,4);
-			// LCDWriteIntXY(10,1,ADC_curr_min,4);
+			LCDWriteIntXY(10,1,ADC_curr_min,4);
 			
 			item_adc_ready = 0;
 			ADC_counter = 0;
 			ADC_curr_min = 1023;
-
 		}
 
-		// TODO: check if rotate stepper motor or not
 
-		// TODO: dequeue while dropping
-		
-
-		// TODO: create new link and add to queue
 		if(ADC_result_flag){
 			ADC_result_flag = 0;
 			
