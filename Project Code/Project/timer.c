@@ -5,7 +5,7 @@ void mTimer(int count){
 	i = 0;
 
 	TCCR1B |= (_BV(CS11) | _BV(WGM12)); // Setting bit 3 in the timer/counter 1 control register
-	OCR1A = 0x03EB; // Set output compare register for 1000 ticks which equals to 1ms
+	OCR1A = 0x03E8; // Set output compare register for 1000 ticks which equals to 1ms
 	TCNT1 = 0x0000; // Sets initial value of timer counter to 0
 	
 	//TIMSK1 |= _BV(OCIE1A); // Setting bit 1 in the timer/counter 1 interrupt mask register
