@@ -8,21 +8,21 @@
 #define STEP1                 0b00110101
 #define STEP2                 0b00110110
 #define STEP3                 0b00101110
-#define STEP4                 0b00110101
+#define STEP4                 0b00101101
 
 // #define STEP05                0b00110101
 // #define STEP15                0b00110110
 // #define STEP25                0b00101110
 // #define STEP35                0b00101101
 
-#define INIT_STEP             2
+#define INIT_STEP             1
 
 #define NEG_DEG90             -50
 #define DEG90                 50
 #define DEG180                100
 
 #define MAX_SPEED             3000  // pulse per second (pps) (Hz) @ max speed 300us per step
-#define ACCEL_TOTAL_STEPS     20
+#define ACCEL_TOTAL_STEPS     13
 
 
 // volatile unsigned int deccel_speed[ACCEL_TOTAL_STEPS] = {333, 348, 364, 381, 400, 421,
