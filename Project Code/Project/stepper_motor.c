@@ -15,7 +15,7 @@ volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
 volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
 																												15, 14, 13, 12, 11,
 																												10, 9, 8};
-volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {9, 11, 13, 15, 17, 20};
+volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
 
 
 /* Initialize Stepper Motor to Black */
@@ -32,7 +32,7 @@ void init_stepper_motor(){
 		i += 1;
 	}
 
-	current_step = i % 4;
+	current_step = (i-1) % 4;
 }
 
 
@@ -46,20 +46,20 @@ void StepperMotor_Rotate(int num_steps){
 
 
 
-void StepperMotor_CW(int num_steps){ // 12  24  60
-    int i = 0;
+void StepperMotor_CW(int num_steps){ //50 100
+    int i = 1;
 		int j = 0;
-    while(i < num_steps){
-				STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[(current_step+i)%4];
-				// uTimer(15000);
-				// mTimer(15);
+    while(i < num_steps+1){
+				STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[(current_step + i) % 4];
+
+				// mTimer(18);
 
 				/* Acceleration and Deceleration Profile */
 				if(num_steps <= 2*ACCEL_TOTAL_STEPS){
 						if(i <= num_steps/2){ 
 							mTimer(accel_speed[i]);
 						} else if (i > num_steps/2 ) {
-							mTimer(decel_speed[num_steps - i - 1]);
+							mTimer(accel_speed[num_steps - i - 1]);
 						}
 				} else {
 						if(i < ACCEL_TOTAL_STEPS){ 
@@ -72,26 +72,23 @@ void StepperMotor_CW(int num_steps){ // 12  24  60
 						}
 				}
 				/* End of Accel/Deccel Profile */
-				
+
 				i += 1;
     }
-
-		if(((num_steps - i) < 15) && !start_dc_motor_flag){
-			run_dc_motor();
-			start_dc_motor_flag = 1;
-		}
 		
-		current_step = (current_step+i)%4;
-
+		current_step = (current_step+i-1)%4;
+		LCDWriteStringXY(0,0,"in CW_");
 }
 
 
 void StepperMotor_CCW(int num_steps){
     int i = 0;
+		int j = 0;
     while(i < num_steps){
         STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[3 - (current_step+i)%4];
-				//uTimer(15000);
-				// mTimer(15);
+				
+				// mTimer(18);
+
 				/* Acceleration and Deceleration Profile */
 				if(num_steps <= 2*ACCEL_TOTAL_STEPS){
 						if(i <= num_steps/2){ 
@@ -102,8 +99,9 @@ void StepperMotor_CCW(int num_steps){
 				} else {
 						if(i < ACCEL_TOTAL_STEPS){ 
 							mTimer(accel_speed[i]);
-						} else if (i > (num_steps - ACCEL_TOTAL_STEPS-1)) {
-							mTimer(accel_speed[num_steps - i - 1]);
+						} else if (i > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
+							mTimer(decel_speed[j]);
+							j += 1;
 						} else {
 							mTimer(accel_speed[ACCEL_TOTAL_STEPS-1]);
 						}
@@ -111,15 +109,8 @@ void StepperMotor_CCW(int num_steps){
 				/* End of Accel/Deccel Profile */
 
 				i += 1;
+				
 		}
-
-		if(((num_steps - i) < 15) && !start_dc_motor_flag){
-			run_dc_motor();
-			start_dc_motor_flag = 1;
-		}
-
-		current_step = 3 - (current_step+i)%4;
+		current_step = 3 - (current_step+i-1)%4;
+		LCDWriteStringXY(0,0,"in CCW");
 }
-
-
-

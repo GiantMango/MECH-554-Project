@@ -23,7 +23,7 @@
 
 #define MAX_SPEED             3000  // pulse per second (pps) (Hz) @ max speed 300us per step
 #define ACCEL_TOTAL_STEPS     13
-#define DECCEL_TOTAL_STEPS    6
+#define DECCEL_TOTAL_STEPS    13
 
 
 void init_stepper_motor();
