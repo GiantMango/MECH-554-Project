@@ -23,12 +23,7 @@
 
 #define MAX_SPEED             3000  // pulse per second (pps) (Hz) @ max speed 300us per step
 #define ACCEL_TOTAL_STEPS     13
-
-
-// volatile unsigned int deccel_speed[ACCEL_TOTAL_STEPS] = {333, 348, 364, 381, 400, 421,
-//                                                          444, 471, 500, 533, 571, 615,
-//                                                          667, 727, 800, 889, 1000, 1143,
-//                                                          1333, 1600, 2000, 2667, 4000, 8000};
+#define DECCEL_TOTAL_STEPS    6
 
 
 void init_stepper_motor();
