@@ -24,34 +24,34 @@
 #define WHITE				2
 #define ALUMINUM		3
 
+#define ALUMINUM_STEEL_BOUND		200
+#define STEEL_WHITE_BOUND				700
+#define WHITE_BLACK_BOUND				915
 
-#define ALUMINUM_STEEL_BOUND		100
-#define STEEL_WHITE_BOUND				800
-#define WHITE_BLACK_BOUND				898
-
-#define TOTAL_ITEM								4
+#define TOTAL_ITEM							48
 
 /* GLOBAL VARIABLES */
-volatile unsigned char temp = 0;
-volatile unsigned char int2_counter;
+//volatile unsigned char temp = 0;
+volatile unsigned char INT2_counter;
 volatile unsigned int ADC_counter;
-volatile unsigned char is_first = 1;
+//volatile unsigned char is_first = 1;
 volatile unsigned char item_counter;
 volatile unsigned char item_adc_ready;
 volatile unsigned char reset_flag;
 volatile unsigned char current_plate;
-volatile unsigned char next_plate;
+//volatile unsigned char next_plate;
 volatile unsigned char aluminum_counter;
 volatile unsigned char steel_counter;
 volatile unsigned char white_counter;
 volatile unsigned char black_counter;
 volatile unsigned char task_complete_flag;
+volatile unsigned char ready_to_drop_flag;
 
-/* default rotation */							  	//|  B  |  A  |  W  |  S  |
-volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, // current plate black
-																				 {NEG_DEG90, 0, DEG90, DEG180}, // current plate aluminum
-																			 	 {DEG180, NEG_DEG90, 0 ,DEG90}, // current plate white
-																			 	 {DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
+/* default rotation */							  //|  B  |  A  |  W  |  S  |
+volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
+																				{NEG_DEG90, 0, DEG90, DEG180}, 	// current plate aluminum
+																			 	{DEG180, NEG_DEG90, 0 ,DEG90}, 	// current plate white
+																			 	{DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
 
 /* Variable Declaration */
 link *head;			/* The ptr to the head of the queue */
@@ -85,7 +85,7 @@ int main(void)
 
 	/* Initialize DC Motor */
 	init_pwm();
-	change_pwm_speed(60);
+	change_pwm_speed(70);
 	init_dc_motor();
 	
 	sei();
@@ -98,70 +98,81 @@ int main(void)
 
 	run_dc_motor();
 
-	int pos = 0;
-	int pos2 = 0;
+	// LCDWriteStringXY(0, 0, "A");
+	// LCDWriteStringXY(3, 0, "S");
+	// LCDWriteStringXY(6, 0, "W");
+	// LCDWriteStringXY(9, 0, "B");
 
 	while(1){			
 
 		PORTL = 0x10;
 
-		/* EX HIGH: object not at exit */
-		while(!EX){ // when something at the exit stop
+		/* When something at the exit, stop dc motor | EX HIGH: object not at exit */
+		while(!EX){ // when part is at exit
 			PORTL = 0x20;
 			brake_dc_motor();			
 
 			switch(head->e.itemMaterial){
 				case(ALUMINUM):
 					StepperMotor_Rotate(rotations[current_plate][ALUMINUM]);
+					aluminum_counter += 1;
 					current_plate = ALUMINUM;
 					break;
 				
 				case(STEEL):
 					StepperMotor_Rotate(rotations[current_plate][STEEL]);
+					steel_counter += 1;
 					current_plate = STEEL;
 					break;
 				
 				case(WHITE):
 					StepperMotor_Rotate(rotations[current_plate][WHITE]);
+					white_counter += 1;
 					current_plate = WHITE;
 					break;
 				
 				case(BLACK):
 					StepperMotor_Rotate(rotations[current_plate][BLACK]);
+					black_counter += 1;
 					current_plate = BLACK;
 					break;
 			}
 
+			/* Object not at the exit */
 			run_dc_motor();
-			mTimer(500);
-			item_counter += 1;
-
-			LCDWriteIntXY(pos, 1, head->e.itemMaterial, 1);
-			pos += 2;
+			mTimer(280);
+			
+			LCDWriteIntXY(0, 1, aluminum_counter, 2);
+			LCDWriteIntXY(3, 1, steel_counter, 2);
+			LCDWriteIntXY(6, 1, white_counter, 2);
+			LCDWriteIntXY(9, 1, black_counter, 2);
 
 			dequeue(&head, &tail, &rtnLink);
 			free(rtnLink);
 
-			while(item_counter == TOTAL_ITEM){
+			if(item_counter == TOTAL_ITEM){
 				disable_dc_motor();
-				PORTL = 0xF0;
-				mTimer(200);
-				PORTL = 0x00;
-				mTimer(200);
+				while(1){
+					PORTL = 0xF0;
+					mTimer(200);
+					PORTL = 0x00;
+					mTimer(200);
+				}
 			}
+			
 		}
 		
+
 
 		while(OR){ // when object is at the reflective sensor
 			start_conversion();
 			PORTL = 0xF0;
 	
-			if(ADC_result_flag){
-				if(ADC_result < ADC_curr_min){
-					ADC_curr_min = ADC_result;
-				}
-				//ADCSRA |= _BV(ADSC);
-			}
+			// if(ADC_result_flag){
+			// 	if(ADC_result < ADC_curr_min){
+			// 		ADC_curr_min = ADC_result;
+			// 	}
+			// }
 			
 			ADC_result_flag = 0;
 			item_adc_ready = 1;
@@ -174,36 +185,29 @@ int main(void)
 
 			if(ADC_curr_min >= WHITE_BLACK_BOUND){
 				newLink->e.itemMaterial = BLACK; // 1
-				black_counter += 1;
-				LCDWriteStringXY(pos2, 0, "B");
+				// LCDWriteStringXY(pos2, 0, "B");
 
 			} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
 				newLink->e.itemMaterial = WHITE; // 3
-				white_counter += 1;
-				LCDWriteStringXY(pos2, 0, "W");
+				// LCDWriteStringXY(pos2, 0, "W");
 
 			} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
 				newLink->e.itemMaterial = STEEL; // 2
-				steel_counter += 1;
-				LCDWriteStringXY(pos2, 0, "S");
+				// LCDWriteStringXY(pos2, 0, "S");
 				
 			} else {
 				newLink->e.itemMaterial = ALUMINUM; // 4
-				aluminum_counter += 1;
-				LCDWriteStringXY(pos2, 0, "A");
-			}
-
-			pos2 += 2;
+				// LCDWriteStringXY(pos2, 0, "A");
+			}			
 
 			enqueue(&head, &tail, &newLink);
-
 			
 			// LCDWriteIntXY(0,0,item_counter,3);
 			// LCDWriteIntXY(5,0,ADC_counter,5);
 			// LCDWriteIntXY(12,0,newLink->e.itemMaterial, 1);
 			// LCDWriteIntXY(0,1,ADC_min_min,4);
 			// LCDWriteIntXY(5,1,ADC_max_min,4);
-			LCDWriteIntXY(10,1,ADC_curr_min,4);
+			// LCDWriteIntXY(10,1,ADC_curr_min,4);
 			
 			item_adc_ready = 0;
 			ADC_counter = 0;
@@ -211,14 +215,14 @@ int main(void)
 		}
 
 
-		if(ADC_result_flag){
-			ADC_result_flag = 0;
-			
-		}
+		// if(ADC_result_flag){
+		// 	ADC_result_flag = 0;
+		// }
 
 		/* Stop dc motor */
 		if(kill_flag){
 			brake_dc_motor();
+			clearQueue(&head, &tail);
 		}
 
 		/* reset numbers */		
@@ -266,4 +270,7 @@ ISR(INT5_vect){
 ISR(INT2_vect){ // OR sensor is logic high when object in
 	enable_adc();
 	start_conversion();
+	INT2_counter += 1;
 }
+
+
