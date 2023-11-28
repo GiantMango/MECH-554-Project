@@ -18,7 +18,5 @@
 #include "timer.h"
 
 void init_sensors(){
-
   DDRB &= ~(_BV(DDB6) | _BV(DDB5) | _BV(DDB4));
-  
 }

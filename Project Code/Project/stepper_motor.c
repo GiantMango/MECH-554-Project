@@ -10,12 +10,10 @@
 volatile unsigned char start_dc_motor_flag;
 volatile unsigned char current_step;
 volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
-//volatile unsigned char half_steps[8] = {STEP05, STEP1, STEP15, STEP2, STEP25, STEP3, STEP35, STEP4};
 
 volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
-																												15, 14, 13, 12, 11,
-																												10, 9, 8};
-volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+																												15, 14, 13, 12, 11};
+volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {12, 13, 14, 15, 16, 17, 18, 19, 20};
 
 
 /* Initialize Stepper Motor to Black */
@@ -43,7 +41,6 @@ void StepperMotor_Rotate(int num_steps){
 			StepperMotor_CW(-num_steps);
 		} // do nothing if num_steps = 0
 }
-
 
 
 void StepperMotor_CW(int num_steps){ //50 100
@@ -77,14 +74,12 @@ void StepperMotor_CW(int num_steps){ //50 100
     }
 		
 		current_step = (current_step+i-1)%4;
-		LCDWriteStringXY(0,0,"in CW_");
 }
 
-
 void StepperMotor_CCW(int num_steps){
-    int i = 0;
+    int i = 2;
 		int j = 0;
-    while(i < num_steps){
+    while(i < num_steps+2){
         STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[3 - (current_step+i)%4];
 				
 				// mTimer(18);
@@ -112,5 +107,4 @@ void StepperMotor_CCW(int num_steps){
 				
 		}
 		current_step = 3 - (current_step+i-1)%4;
-		LCDWriteStringXY(0,0,"in CCW");
 }
