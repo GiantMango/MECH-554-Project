@@ -131,12 +131,6 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="mTimer.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="mTimer.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="myutils.h">
       <SubType>compile</SubType>
     </Compile>
@@ -153,6 +147,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="stepper_motor.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="timer.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="timer.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

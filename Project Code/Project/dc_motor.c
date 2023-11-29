@@ -8,8 +8,14 @@
 
 /* Initialize DC motor */
 void init_dc_motor(){
+	// Enable switch button interrupt
+	EIMSK |= (_BV(INT4));
+	EICRB |= (_BV(ISC41));		// falling edge trigger
+
+	// GPIO
+	DDRE &= ~(_BV(PE1) | _BV(PE0)); // used as input
+
 	DDRB |= (_BV(DDB0) | _BV(DDB1) | _BV(DDB2) | _BV(DDB3));	// set as output pins to control DC motor
-	DDRE &= ~(_BV(PE1) | _BV(PE0));
 	//PORTB = (PORTB & 0xF0) | DC_Brake;							// motor driver enable pins	& brake to Vcc
 	brake_dc_motor();
 }

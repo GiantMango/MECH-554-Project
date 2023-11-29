@@ -19,7 +19,7 @@ void start_conversion(){
 
 /* Stop ADC Conversion */
 void stop_conversion(){
-	ADCSRA &= ~(_BV(ADSC));		// clear ADSC
+	ADCSRA &= ~(_BV(ADSC));				// clear ADSC
 }// end stop_adc
 
 void free_running_adc(){

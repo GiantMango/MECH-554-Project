@@ -42,10 +42,10 @@ C_SRCS +=  \
 ../LCD.c \
 ../LinkedQueue.c \
 ../main.c \
-../mTimer.c \
 ../pwm.c \
 ../sensor.c \
-../stepper_motor.c
+../stepper_motor.c \
+../timer.c
 
 
 PREPROCESSING_SRCS += 
@@ -60,10 +60,10 @@ dc_motor.o \
 LCD.o \
 LinkedQueue.o \
 main.o \
-mTimer.o \
 pwm.o \
 sensor.o \
-stepper_motor.o
+stepper_motor.o \
+timer.o
 
 OBJS_AS_ARGS +=  \
 adc.o \
@@ -71,10 +71,10 @@ dc_motor.o \
 LCD.o \
 LinkedQueue.o \
 main.o \
-mTimer.o \
 pwm.o \
 sensor.o \
-stepper_motor.o
+stepper_motor.o \
+timer.o
 
 C_DEPS +=  \
 adc.d \
@@ -82,10 +82,10 @@ dc_motor.d \
 LCD.d \
 LinkedQueue.d \
 main.d \
-mTimer.d \
 pwm.d \
 sensor.d \
-stepper_motor.d
+stepper_motor.d \
+timer.d
 
 C_DEPS_AS_ARGS +=  \
 adc.d \
@@ -93,10 +93,10 @@ dc_motor.d \
 LCD.d \
 LinkedQueue.d \
 main.d \
-mTimer.d \
 pwm.d \
 sensor.d \
-stepper_motor.d
+stepper_motor.d \
+timer.d
 
 OUTPUT_FILE_PATH +=Project.elf
 
@@ -147,13 +147,6 @@ LINKER_SCRIPT_DEP+=
 	@echo Finished building: $<
 	
 
-./mTimer.o: .././mTimer.c
-	@echo Building file: $<
-	@echo Invoking: XC8 C Compiler : 2.36
-	$(QUOTE)C:\Program Files\Microchip\xc8\v2.36\bin\xc8-cc.exe$(QUOTE)  -mcpu=ATmega2560  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\xc8"  -c -x c -funsigned-char -funsigned-bitfields -mext=cci -D__ATmega2560__ -DDEBUG  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
-	@echo Finished building: $<
-	
-
 ./pwm.o: .././pwm.c
 	@echo Building file: $<
 	@echo Invoking: XC8 C Compiler : 2.36
@@ -169,6 +162,13 @@ LINKER_SCRIPT_DEP+=
 	
 
 ./stepper_motor.o: .././stepper_motor.c
+	@echo Building file: $<
+	@echo Invoking: XC8 C Compiler : 2.36
+	$(QUOTE)C:\Program Files\Microchip\xc8\v2.36\bin\xc8-cc.exe$(QUOTE)  -mcpu=ATmega2560  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\xc8"  -c -x c -funsigned-char -funsigned-bitfields -mext=cci -D__ATmega2560__ -DDEBUG  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./timer.o: .././timer.c
 	@echo Building file: $<
 	@echo Invoking: XC8 C Compiler : 2.36
 	$(QUOTE)C:\Program Files\Microchip\xc8\v2.36\bin\xc8-cc.exe$(QUOTE)  -mcpu=ATmega2560  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\xc8"  -c -x c -funsigned-char -funsigned-bitfields -mext=cci -D__ATmega2560__ -DDEBUG  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

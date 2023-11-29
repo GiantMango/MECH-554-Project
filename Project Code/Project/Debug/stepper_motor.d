@@ -13,7 +13,8 @@ stepper_motor.d stepper_motor.o: .././stepper_motor.c \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\fuse.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\lock.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h \
- .././stepper_motor.h .././mTimer.h .././sensor.h .././lcd.h \
+ .././stepper_motor.h .././timer.h .././sensor.h .././dc_motor.h \
+ .././lcd.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\util\delay.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\util\delay_basic.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\math.h \
@@ -49,9 +50,11 @@ c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h:
 
 .././stepper_motor.h:
 
-.././mTimer.h:
+.././timer.h:
 
 .././sensor.h:
+
+.././dc_motor.h:
 
 .././lcd.h:
 

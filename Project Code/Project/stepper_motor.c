@@ -9,28 +9,29 @@
 /* GLOBAL VARIABLES */
 volatile unsigned char start_dc_motor_flag;
 volatile unsigned char current_step;
+volatile unsigned char temp_step;
 volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
 
 volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
 																												15, 14, 13, 12, 11};
-volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {12, 13, 14, 15, 16, 17, 18, 19, 20};
+volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {12, 13, 14, 15, 16,
+																												 17, 18, 19, 20};
 
 
 /* Initialize Stepper Motor to Black */
 void init_stepper_motor(){
 
 	DDRA |= (_BV(PA0) | _BV(PA1) | _BV(PA2) | _BV(PA3) | _BV(PA4) | _BV(PA5));
-
 	PORTL = 0xF0;
 	int i = 0;
 
 	while(HE){ // HE: active low
-		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[i % 4];
-		mTimer(15);
+		temp_step = i % 4;
+		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp_step];
+		mTimer(18);
 		i += 1;
 	}
-
-	current_step = (i-1) % 4;
+	current_step = temp_step;
 }
 
 
@@ -44,67 +45,51 @@ void StepperMotor_Rotate(int num_steps){
 
 
 void StepperMotor_CW(int num_steps){ //50 100
-    int i = 1;
 		int j = 0;
-    while(i < num_steps+1){
-				STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[(current_step + i) % 4];
+		for(int i = 1; i < (num_steps+1); i++){
+				temp_step = (current_step + i) % 4;
+				STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp_step];
 
 				// mTimer(18);
 
 				/* Acceleration and Deceleration Profile */
-				if(num_steps <= 2*ACCEL_TOTAL_STEPS){
-						if(i <= num_steps/2){ 
-							mTimer(accel_speed[i]);
-						} else if (i > num_steps/2 ) {
-							mTimer(accel_speed[num_steps - i - 1]);
-						}
+				if((i-1) < ACCEL_TOTAL_STEPS){ 
+					mTimer(accel_speed[i]);
+				} else if ((i-1) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
+					mTimer(decel_speed[j]);
+					j += 1;
 				} else {
-						if(i < ACCEL_TOTAL_STEPS){ 
-							mTimer(accel_speed[i]);
-						} else if (i > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
-							mTimer(decel_speed[j]);
-							j += 1;
-						} else {
-							mTimer(accel_speed[ACCEL_TOTAL_STEPS - 1]);
-						}
+					mTimer(accel_speed[ACCEL_TOTAL_STEPS - 1]);
 				}
 				/* End of Accel/Deccel Profile */
 
-				i += 1;
     }
 		
-		current_step = (current_step+i-1)%4;
+		current_step = temp_step;
+
 }
 
 void StepperMotor_CCW(int num_steps){
-    int i = 2;
 		int j = 0;
-    while(i < num_steps+2){
-        STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[3 - (current_step+i)%4];
+		for(int i = 2; i < (num_steps+2); i++){
+				temp_step = 3 - (current_step+i)%4;
+        STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp_step];
 				
 				// mTimer(18);
 
-				/* Acceleration and Deceleration Profile */
-				if(num_steps <= 2*ACCEL_TOTAL_STEPS){
-						if(i <= num_steps/2){ 
-							mTimer(accel_speed[i]);
-						} else if (i > num_steps/2 ) {
-							mTimer(accel_speed[num_steps - i - 1]);
-						}
+				// /* Acceleration and Deceleration Profile */
+				if((i-2) < ACCEL_TOTAL_STEPS){ 
+					mTimer(accel_speed[i]);
+				} else if ((i-2) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
+					mTimer(decel_speed[j]);
+					j += 1;
 				} else {
-						if(i < ACCEL_TOTAL_STEPS){ 
-							mTimer(accel_speed[i]);
-						} else if (i > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
-							mTimer(decel_speed[j]);
-							j += 1;
-						} else {
-							mTimer(accel_speed[ACCEL_TOTAL_STEPS-1]);
-						}
+					mTimer(accel_speed[ACCEL_TOTAL_STEPS - 1]);
 				}
-				/* End of Accel/Deccel Profile */
+				/* End of Accel/Deccel Profile */			
 
-				i += 1;
-				
 		}
-		current_step = 3 - (current_step+i-1)%4;
+
+		current_step = temp_step;
+
 }

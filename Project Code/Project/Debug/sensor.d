@@ -13,7 +13,7 @@ sensor.d sensor.o: .././sensor.c \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\fuse.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\lock.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h \
- .././sensor.h .././mTimer.h
+ .././sensor.h .././timer.h
 
 c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\io.h:
 
@@ -45,4 +45,4 @@ c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h:
 
 .././sensor.h:
 
-.././mTimer.h:
+.././timer.h:

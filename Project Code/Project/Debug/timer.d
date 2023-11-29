@@ -1,4 +1,4 @@
-mTimer.d mTimer.o: .././mTimer.c \
+timer.d timer.o: .././timer.c \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\io.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\sfr_defs.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\inttypes.h \

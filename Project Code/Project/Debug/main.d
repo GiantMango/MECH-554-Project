@@ -1,4 +1,5 @@
 main.d main.o: .././main.c \
+ c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\io.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\sfr_defs.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\inttypes.h \
@@ -12,14 +13,15 @@ main.d main.o: .././main.c \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\common.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\fuse.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\lock.h \
- c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\stdlib.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\stdio.h .././lcd.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\util\delay.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\util\delay_basic.h \
  c:\program\ files\microchip\xc8\v2.36\avr\avr\include\math.h \
- .././myutils.h .././mTimer.h .././adc.h .././pwm.h .././dc_motor.h \
+ .././myutils.h .././timer.h .././adc.h .././pwm.h .././dc_motor.h \
  .././LinkedQueue.h .././sensor.h .././stepper_motor.h
+
+c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h:
 
 c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\io.h:
 
@@ -47,8 +49,6 @@ c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\fuse.h:
 
 c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\lock.h:
 
-c:\program\ files\microchip\xc8\v2.36\avr\avr\include\avr\interrupt.h:
-
 c:\program\ files\microchip\xc8\v2.36\avr\avr\include\stdlib.h:
 
 c:\program\ files\microchip\xc8\v2.36\avr\avr\include\stdio.h:
@@ -63,7 +63,7 @@ c:\program\ files\microchip\xc8\v2.36\avr\avr\include\math.h:
 
 .././myutils.h:
 
-.././mTimer.h:
+.././timer.h:
 
 .././adc.h:
 

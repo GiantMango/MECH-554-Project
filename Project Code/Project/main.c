@@ -44,8 +44,11 @@
 
 /* Global Variable */
 volatile unsigned char STATE;
-volatile unsigned char in_exit_counter;
-volatile unsigned char INT2_counter;
+volatile unsigned char in_OR_flag;
+
+volatile unsigned char INT2_counter; // counts enters OR
+volatile unsigned char INT3_counter; // counts EX
+volatile unsigned char INT5_counter; // counts leaves OR
 volatile unsigned int ADC_counter;
 volatile unsigned char item_counter;
 
@@ -55,12 +58,8 @@ volatile unsigned char white_counter;
 volatile unsigned char black_counter;
 
 volatile unsigned char current_plate;
-
-volatile unsigned char item_adc_ready;
-volatile unsigned char at_exit_flag;
-volatile unsigned char reset_flag;
-volatile unsigned char task_complete_flag;
-volatile unsigned char ready_to_drop_flag;
+volatile unsigned char current_part;
+volatile unsigned int	 current_reading;
 
 /* default rotation */							  //|  B  |  A  |  W  |  S  |
 volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
@@ -75,9 +74,6 @@ link *rtnLink;		/* same as the above */
 element eTest;		/* A variable to hold the aggregate data type known as element */			
 /* End of Glabal Variables*/
 
-/* Prototype */
-void init_INT();
-
 
 int main(int argc, char *argv[]){
 	CLKPR = 0x80;
@@ -87,30 +83,18 @@ int main(int argc, char *argv[]){
 
 	cli();		// Disables all interrupts
 	
-	DDRD = 0b11110000;	// Going to set up INT2 & INT3 on PORTD
-	DDRC = 0xFF;		// just use as a display
-
-
-	// Set up the Interrupt 0,3 options
-	//External Interrupt Control Register A - EICRA (pg 110 and under the EXT_INT tab to the right
-	// Set Interrupt sense control to catch a rising edge
-	EICRA |= _BV(ISC21) | _BV(ISC20);
-	EICRA |= _BV(ISC31) | _BV(ISC30);
-
-	//	EICRA &= ~_BV(ISC21) & ~_BV(ISC20); /* These lines would undo the above two lines */
-	//	EICRA &= ~_BV(ISC31) & ~_BV(ISC30); /* Nice little trick */
-
-
-	// See page 112 - EIFR External Interrupt Flags...notice how they reset on their own in 'C'...not in assembly
-	EIMSK |= 0x0C;
+	DDRL = 0xF0; // for LED
 
 	/* Initialize LCD */
 	InitLCD(LS_BLINK|LS_ULINE);
 	LCDClear();
 	
+	/* Sensor */
+	init_sensors();
+
 	/* Initialize ADC */
 	init_adc();
-	//free_running_adc();
+	free_running_adc();
 
 	/* Initialize DC Motor */
 	init_pwm(70);
@@ -122,18 +106,60 @@ int main(int argc, char *argv[]){
 
 	setup(&head, &tail);
 
-	run_dc_motor();
+	// LCDWriteStringXY(0, 0, "A");
+	// LCDWriteStringXY(3, 0, "S");
+	// LCDWriteStringXY(6, 0, "W");
+	// LCDWriteStringXY(9, 0, "B");
 
-	// Enable all interrupts
-	init_INT();
 	sei();	// Note this sets the Global Enable for all interrupts
 
 	goto POLLING_STAGE;
 
 	// POLLING STATE
 	POLLING_STAGE:
-		PORTC |= 0xF0;	// Indicates this state is active
+		PORTL = 0x10;
+		LCDWriteIntXY(0,0,STATE, 1);
+		LCDWriteIntXY(10,0,INT2_counter,2);
+		LCDWriteIntXY(14,0,INT3_counter,2);
+
 		run_dc_motor();
+
+		// LCDWriteIntXY(0, 1, aluminum_counter, 2);
+		// LCDWriteIntXY(3, 1, steel_counter, 2);
+		// LCDWriteIntXY(6, 1, white_counter, 2);
+		// LCDWriteIntXY(9, 1, black_counter, 2);
+
+		if(!OR && in_OR_flag){
+			PORTL = 0x70;
+			disable_adc();
+			stop_conversion();
+			
+			initLink(&newLink);
+
+			if(ADC_curr_min >= WHITE_BLACK_BOUND){
+				newLink->e.itemMaterial = BLACK; // 1
+				// LCDWriteStringXY(pos2, 0, "B");
+			} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
+				newLink->e.itemMaterial = WHITE; // 3
+				// LCDWriteStringXY(pos2, 0, "W");
+			} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
+				newLink->e.itemMaterial = STEEL; // 2
+				// LCDWriteStringXY(pos2, 0, "S");
+			} else {
+				newLink->e.itemMaterial = ALUMINUM; // 4
+				// LCDWriteStringXY(pos2, 0, "A");
+			}
+			
+			enqueue(&head, &tail, &newLink);
+
+			LCDWriteIntXY(10,1,ADC_counter,4);
+			LCDWriteIntXY(5,0,ADC_curr_min,4);
+
+			ADC_curr_min = 1023;
+			ADC_counter = 0;
+			in_OR_flag = 0;
+		}
+
 		switch(STATE){
 			case (0) :
 				goto POLLING_STAGE;
@@ -153,17 +179,20 @@ int main(int argc, char *argv[]){
 				goto POLLING_STAGE;
 		}//switch STATE
 
+
 	REFLECTIVE_STAGE:
-		// Do whatever is necessary HERE
-		ADC_curr_min = 1023;
+		PORTL = 0x20;
+
+		enable_adc();
 		start_conversion();
-		PORTC = 0x01; // Just output pretty lights know you made it here
+		
 		//Reset the state variable
 		STATE = 0;
 		goto POLLING_STAGE;
 	
+
 	BUCKET_STAGE:
-		// Do whatever is necessary HERE
+		PORTL = 0x40;
 		brake_dc_motor();
 
 		switch(head->e.itemMaterial){
@@ -195,17 +224,22 @@ int main(int argc, char *argv[]){
 		run_dc_motor();
 		mTimer(200);
 
+		LCDWriteIntXY(0,0,STATE, 1);
+		LCDWriteIntXY(0,1,head->e.itemMaterial,1);
+
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
-		PORTC = 0x04;
 		//Reset the state variable
 		STATE = 0;
 		goto POLLING_STAGE;
+
 	
+
 	RESET:
-		PORTC = 0x08;
-		STATE = 0;
+		PORTL = 0xF0;
+
+		brake_dc_motor();
 
 		/* Resetting all counters */
 		ADC_curr_min = 1023;
@@ -214,96 +248,55 @@ int main(int argc, char *argv[]){
 		steel_counter = 0;
 		black_counter = 0;
 		white_counter = 0;
+		INT2_counter = 0;
+		INT3_counter = 0;
 
-		brake_dc_motor();
-
-		goto POLLING_STAGE;
 
 	END:
 		// The closing STATE ... how would you get here?
-		PORTC = 0xF0;	// Indicates this state is active
+		PORTL = 0xF0;	// Indicates this state is active
 		// Stop everything here...'MAKE SAFE'
 		disable_adc();
 		disable_dc_motor();
-		cli();
+		// cli();
 
 	return(0);
 
 }
 
-void init_INT(){
-	/* Rising Edge Triggers */
-	EIMSK |= (_BV(INT2));									// enable INT2 for OR
-	EICRA |= (_BV(ISC21) | _BV(ISC20));
-	
-	/* Falling Edge Triggers */
-	EIMSK |= (_BV(INT4) | _BV(INT5));			// enable INT4 and 5 for reset
-	EICRB |= (_BV(ISC51) | _BV(ISC41));
-}
-
 /* Interrupt Service Routine*/
+EMPTY_INTERRUPT(BADISR_vect);
+
 ISR(ADC_vect){ //ADC conversion done
 	ADC_result = (ADCL >> 6) + (ADCH << 2);
 	if(ADC_result < ADC_curr_min){
 		ADC_curr_min = ADC_result;
 	}
-	ADC_result_flag = 1;
-	ADC_counter += 1;
 
-	// if OR still high -> object still at the sensor
-	if(PINB & 0x02 == 0x02){
-		start_conversion();
-	} else { // object exits the sensor -> enqueue
-		initLink(&newLink);
-		if(ADC_curr_min >= WHITE_BLACK_BOUND){
-			newLink->e.itemMaterial = BLACK; // 1
-			// LCDWriteStringXY(pos2, 0, "B");
-		} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
-			newLink->e.itemMaterial = WHITE; // 3
-			// LCDWriteStringXY(pos2, 0, "W");
-		} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
-			newLink->e.itemMaterial = STEEL; // 2
-			// LCDWriteStringXY(pos2, 0, "S");
-		} else {
-			newLink->e.itemMaterial = ALUMINUM; // 4
-			// LCDWriteStringXY(pos2, 0, "A");
-		}			
-		enqueue(&head, &tail, &newLink);
-		ADC_counter = 0;
-	}
+	ADC_counter += 1;
+	in_OR_flag = 1;
 }
 
 /* Sensor INT */
 ISR(INT2_vect){ // catch OR rising edge
-	/* Toggle PORTC bit 2 */
 	INT2_counter += 1;
 	STATE = 1;
 }
 
 ISR(INT3_vect){ //catch EX falling edge
+	INT3_counter += 1;
 	STATE = 2; // bucket stage
 }
 
 /* Switches INT */
 ISR(INT4_vect){
-	/* Toggle PORTC bit 3 */
 	mTimer(25);
-	while((PINE & 0x01) == 0x00);
-	mTimer(25);
-	STATE = 4; // reset
-}
-
-ISR(INT5_vect){
-	/* Toggle PORTC bit 3 */
-	mTimer(25);
-	while((PINE & 0x01) == 0x00);
+	while(!SWITCH1);
 	mTimer(25);
 	STATE = 4; // reset
 }
 
-// If an unexpected interrupt occurs (interrupt is enabled and no handler is installed,
-// which usually indicates a bug), then the default action is to reset the device by jumping
-// to the reset vector. You can override this by supplying a function named BADISR_vect which
-// should be defined with ISR() as such. (The name BADISR_vect is actually an alias for __vector_default.
-// The latter must be used inside assembly code in case <avr/interrupt.h> is not included.
-EMPTY_INTERRUPT(BADISR_vect);
+// ISR(INT5_vect){ // catch OR rising edge
+// 	INT5_counter += 1;
+// 	STATE = 3; 
+// }
