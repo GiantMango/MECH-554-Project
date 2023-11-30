@@ -46,10 +46,10 @@
 volatile unsigned char STATE = 0;
 volatile unsigned char in_OR_flag = 0;
 
-volatile unsigned char INT0_counter = 0; // counts enters OR
-volatile unsigned char INT1_counter = 0; // counts EX
+volatile unsigned char INT1_counter = 0; // counts enters OR
+volatile unsigned char INT3_counter = 0; // counts EX
 volatile unsigned char INT5_counter = 0; // counts leaves OR
-volatile unsigned int  ADC_counter = 0;
+volatile unsigned int ADC_counter = 0;
 volatile unsigned char item_counter = 0;
 
 volatile unsigned char aluminum_counter = 0;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
 	free_running_adc();
 
 	/* Initialize DC Motor */
-	init_pwm(90);
+	init_pwm(70);
 	init_dc_motor();
 
 	/* Initialize Stepper Motor and Plate Position */
@@ -161,12 +161,6 @@ int main(int argc, char *argv[]){
 			in_OR_flag = 0;
 		}
 
-		if(item_counter == TOTAL_ITEM){
-			mTimer(200);
-			STATE = 5;
-			goto END;
-		}
-
 		switch(STATE){
 			case (0) :
 				goto POLLING_STAGE;
@@ -190,7 +184,7 @@ int main(int argc, char *argv[]){
 	REFLECTIVE_STAGE:
 		PORTL = 0x20;
 
-		LCDWriteIntXY(10,0,INT0_counter,2);
+		LCDWriteIntXY(10,0,INT1_counter,2);
 
 		enable_adc();
 		start_conversion();
@@ -203,7 +197,7 @@ int main(int argc, char *argv[]){
 	BUCKET_STAGE:
 		PORTL = 0x40;
 
-		LCDWriteIntXY(14,0,INT1_counter,2);
+		LCDWriteIntXY(14,0,INT3_counter,2);
 
 		brake_dc_motor();
 
@@ -236,19 +230,16 @@ int main(int argc, char *argv[]){
 		}
 
 		run_dc_motor();
+		mTimer(200);
 
 		// LCDWriteIntXY(0,0,STATE, 1);
 		
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
-		item_counter += 1;
-
 		//Reset the state variable
 		STATE = 0;
 		goto POLLING_STAGE;
-
-
 
 	
 
@@ -267,20 +258,16 @@ int main(int argc, char *argv[]){
 		black_counter = 0;
 		white_counter = 0;
 		INT1_counter = 0;
-		INT0_counter = 0;
+		INT3_counter = 0;
 
 
 	END:
+		// The closing STATE ... how would you get here?
+		PORTL = 0xF0;	// Indicates this state is active
+		// Stop everything here...'MAKE SAFE'
 		disable_adc();
 		disable_dc_motor();
-		cli();
-
-		for(int i = 0; i < 10; i++){
-			PORTL = 0xF0;
-			mTimer(500);
-			PORTL = 0x00;
-			mTimer(500);
-		}
+		// cli();
 
 	return(0);
 
@@ -301,12 +288,12 @@ ISR(ADC_vect){ //ADC conversion done
 
 /* Sensor INT */
 ISR(INT0_vect){ // OR sensor is logic high when object in
-	INT0_counter += 1;
+	INT1_counter += 1;
 	STATE = 1;
 }
 
-ISR(INT1_vect){ //catch EX falling edge
-	INT1_counter += 1;
+ISR(INT3_vect){ //catch EX falling edge
+	INT3_counter += 1;
 	STATE = 2; // bucket stage
 }
 

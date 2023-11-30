@@ -19,12 +19,12 @@
 
 void init_sensors(){
   // OR
-  EIMSK |= (_BV(INT2));
-  EICRA |= (_BV(ISC21) | _BV(ISC20)); // rising edge
+  EIMSK |= (_BV(INT0));
+  EICRA |= (_BV(ISC01) | _BV(ISC00)); // rising edge
 
   // EX
-  EIMSK |= (_BV(INT3));		
-	EICRA |= (_BV(ISC31));  // falling edge
+  EIMSK |= (_BV(INT1));		
+	EICRA |= (_BV(ISC11));  // falling edge
 
   // GPIO
   DDRB &= ~(_BV(DDB6) | _BV(DDB5) | _BV(DDB4));
