@@ -12,11 +12,11 @@ volatile unsigned char current_step;
 volatile unsigned char temp_step;
 volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
 
-volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {19, 18, 17, 16, 15,
-																												14, 13, 12, 11, 10,
-																												9, 8, 7, 6};
-volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {7, 9, 11, 14, 16,
-																												 18, 19, 20};
+volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
+																												15, 14, 13, 12, 11,
+																												10,	9, 8, 7};
+volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {8, 9, 10, 11,
+																												12, 14, 16, 18, 20};
 
 
 /* Initialize Stepper Motor to Black */

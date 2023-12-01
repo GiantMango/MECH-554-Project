@@ -17,7 +17,7 @@
 #define DEG180                100
 
 #define ACCEL_TOTAL_STEPS     14
-#define DECCEL_TOTAL_STEPS    8
+#define DECCEL_TOTAL_STEPS    9
 
 
 void init_stepper_motor();

@@ -38,9 +38,21 @@
 
 #define ALUMINUM_STEEL_BOUND		200
 #define STEEL_WHITE_BOUND				700
-#define WHITE_BLACK_BOUND				915
+#define WHITE_BLACK_BOUND				905
 
 #define TOTAL_ITEM							48
+
+// #define CALIBRATION
+#define CALIBRATION_MODE				0
+#define WORK_MODE								1
+
+#ifdef CALIBRATION
+#   define DC_MOTOR_SPEED 80
+#		define MODE						0
+#else
+#   define DC_MOTOR_SPEED 115
+#		define MODE						1
+#endif
 
 /* Global Variable */
 volatile unsigned char STATE = 0;
@@ -69,6 +81,7 @@ volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// curre
 																			 	{DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
 
 void categorize();
+void calibration();
 
 link *head;			/* The ptr to the head of the queue */
 link *tail;			/* The ptr to the tail of the queue */
@@ -100,7 +113,7 @@ int main(int argc, char *argv[]){
 	free_running_adc();
 
 	/* Initialize DC Motor */
-	init_pwm(130);
+	init_pwm(DC_MOTOR_SPEED);
 	init_dc_motor();
 
 	/* Initialize Stepper Motor and Plate Position */
@@ -109,10 +122,10 @@ int main(int argc, char *argv[]){
 
 	setup(&head, &tail);
 
-	// LCDWriteStringXY(0, 0, "A");
-	// LCDWriteStringXY(3, 0, "S");
-	// LCDWriteStringXY(6, 0, "W");
-	// LCDWriteStringXY(9, 0, "B");
+	LCDWriteStringXY(0, 0, "A");
+	LCDWriteStringXY(3, 0, "S");
+	LCDWriteStringXY(6, 0, "W");
+	LCDWriteStringXY(9, 0, "B");
 
 	sei();	// Note this sets the Global Enable for all interrupts
 
@@ -127,17 +140,23 @@ int main(int argc, char *argv[]){
 
 		run_dc_motor();
 
-		// LCDWriteIntXY(0, 1, aluminum_counter, 2);
-		// LCDWriteIntXY(3, 1, steel_counter, 2);
-		// LCDWriteIntXY(6, 1, white_counter, 2);
-		// LCDWriteIntXY(9, 1, black_counter, 2);
 
-		if(!OR && in_OR_flag){
-			PORTL = 0x70;
-			disable_adc();
-			stop_conversion();
-			categorize();
+		if(MODE){
+			if(!OR && in_OR_flag){
+				PORTL = 0x70;
+				disable_adc();
+				stop_conversion();
+				categorize();
+			}
+		} else {
+			if(!OR && in_OR_flag){
+				PORTL = 0x70;
+				disable_adc();
+				stop_conversion();
+				calibration();
+			}
 		}
+
 
 		if(item_counter == TOTAL_ITEM){
 			mTimer(200);
@@ -164,9 +183,8 @@ int main(int argc, char *argv[]){
 
 	BUCKET_STAGE:
 		PORTL = 0x40;
-
-		LCDWriteIntXY(14,1,BUCKET_counter,2);
-		mTimer(40);
+		BUCKET_counter += 1;
+		// LCDWriteIntXY(14,1,BUCKET_counter,2);
 		brake_dc_motor();
 
 		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
@@ -198,8 +216,6 @@ int main(int argc, char *argv[]){
 		}
 
 		run_dc_motor();
-
-		// LCDWriteIntXY(0,0,STATE, 1);
 		
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
@@ -212,6 +228,11 @@ int main(int argc, char *argv[]){
 		}
 
 		item_counter += 1;
+
+		LCDWriteIntXY(0, 1, aluminum_counter, 2);
+		LCDWriteIntXY(3, 1, steel_counter, 2);
+		LCDWriteIntXY(6, 1, white_counter, 2);
+		LCDWriteIntXY(9, 1, black_counter, 2);
 
 		//Reset the state variable
 		STATE = 0;
@@ -228,6 +249,8 @@ int main(int argc, char *argv[]){
 		clearQueue(&head, &tail);
 		setup(&head, &tail);
 		ADC_curr_min = 1023;
+		ADC_max_min = 0;
+		ADC_min_min = 1023;
 		ADC_counter = 0;
 		item_counter = 0;
 		aluminum_counter = 0;
@@ -236,7 +259,7 @@ int main(int argc, char *argv[]){
 		white_counter = 0;
 		INT1_counter = 0;
 		INT0_counter = 0;
-
+		STATE = 0;
 
 	END:
 		disable_adc();
@@ -282,6 +305,22 @@ void categorize(){
 	in_OR_flag = 0;
 }
 
+void calibration(){
+	if(ADC_curr_min > ADC_max_min){
+		ADC_max_min = ADC_curr_min;
+	}
+
+	if(ADC_min_min > ADC_curr_min){
+		ADC_min_min = ADC_curr_min;
+	}
+	in_OR_flag = 0;
+	LCDWriteIntXY(0,0,ADC_min_min,4);
+	LCDWriteIntXY(5,0,ADC_max_min,4);
+	LCDWriteIntXY(10,0,ADC_curr_min,4);
+	LCDWriteIntXY(10,1,INT0_counter,2);
+	ADC_curr_min = 1023;
+}
+
 /* Interrupt Service Routine*/
 EMPTY_INTERRUPT(BADISR_vect);
 
@@ -300,12 +339,12 @@ ISR(INT0_vect){ // OR sensor is logic high when object in
 	enable_adc();
 	start_conversion();
 	INT0_counter += 1;
-	LCDWriteIntXY(10,0,INT0_counter,2);
+	// LCDWriteIntXY(10,0,INT0_counter,2);
 }
 
 ISR(INT1_vect){ //catch EX falling edge
 	INT1_counter += 1;
-	LCDWriteIntXY(14,0,INT1_counter,2);
+	// LCDWriteIntXY(14,0,INT1_counter,2);
 	STATE = 2; // bucket stage
 }
 
