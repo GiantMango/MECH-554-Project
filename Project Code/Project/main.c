@@ -166,7 +166,7 @@ int main(int argc, char *argv[]){
 		PORTL = 0x40;
 
 		LCDWriteIntXY(14,1,BUCKET_counter,2);
-
+		mTimer(20);
 		brake_dc_motor();
 
 		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
@@ -251,9 +251,10 @@ int main(int argc, char *argv[]){
 		}
 
 	return(0);
-
 }
 
+
+/* Subroutines */
 void categorize(){
 	initLink(&newLink);
 
@@ -300,7 +301,6 @@ ISR(INT0_vect){ // OR sensor is logic high when object in
 	start_conversion();
 	INT0_counter += 1;
 	LCDWriteIntXY(10,0,INT0_counter,2);
-	STATE = 1;
 }
 
 ISR(INT1_vect){ //catch EX falling edge

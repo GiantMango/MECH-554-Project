@@ -24,6 +24,5 @@ void init_stepper_motor();
 void StepperMotor_Rotate(int num_steps);
 void StepperMotor_CW(int num_steps);
 void StepperMotor_CCW(int num_steps);
-void ramp(int i, int j, int num_steps);
 
 #endif /* STEPPER_MOTOR_H_ */
