@@ -166,7 +166,7 @@ int main(int argc, char *argv[]){
 		PORTL = 0x40;
 
 		LCDWriteIntXY(14,1,BUCKET_counter,2);
-		mTimer(20);
+		mTimer(40);
 		brake_dc_motor();
 
 		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
