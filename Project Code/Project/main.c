@@ -51,6 +51,7 @@ volatile unsigned char INT1_counter = 0; // counts EX
 volatile unsigned char INT5_counter = 0; // counts leaves OR
 volatile unsigned int  ADC_counter = 0;
 volatile unsigned char item_counter = 0;
+volatile unsigned char BUCKET_counter = 0;
 
 volatile unsigned char aluminum_counter = 0;
 volatile unsigned char steel_counter = 0;
@@ -60,15 +61,14 @@ volatile unsigned char black_counter = 0;
 volatile unsigned char current_plate;
 volatile unsigned char current_part;
 volatile unsigned int	 current_reading;
-volatile signed char extra_steps;
-volatile unsigned char extra_plate;
-volatile unsigned char extra_piece;
 
 /* default rotation */							  //|  B  |  A  |  W  |  S  |
 volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
 																				{NEG_DEG90, 0, DEG90, DEG180}, 	// current plate aluminum
 																			 	{DEG180, NEG_DEG90, 0 ,DEG90}, 	// current plate white
 																			 	{DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
+
+void categorize();
 
 link *head;			/* The ptr to the head of the queue */
 link *tail;			/* The ptr to the tail of the queue */
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]){
 	free_running_adc();
 
 	/* Initialize DC Motor */
-	init_pwm(70);
+	init_pwm(130);
 	init_dc_motor();
 
 	/* Initialize Stepper Motor and Plate Position */
@@ -114,18 +114,18 @@ int main(int argc, char *argv[]){
 	// LCDWriteStringXY(6, 0, "W");
 	// LCDWriteStringXY(9, 0, "B");
 
-	sei();
+	sei();	// Note this sets the Global Enable for all interrupts
 
-
-	goto POLLING_STAGE; // STATE = 0
+	goto POLLING_STAGE;
 
 	// POLLING STATE
 	POLLING_STAGE:
 		PORTL = 0x10;
+		// LCDWriteIntXY(0,0,STATE, 1);
+		// LCDWriteIntXY(10,0,INT2_counter,2);
+		// LCDWriteIntXY(14,0,INT3_counter,2);
 
 		run_dc_motor();
-
-		LCDWriteIntXY(8,0,INT1_counter,2);
 
 		// LCDWriteIntXY(0, 1, aluminum_counter, 2);
 		// LCDWriteIntXY(3, 1, steel_counter, 2);
@@ -136,31 +136,7 @@ int main(int argc, char *argv[]){
 			PORTL = 0x70;
 			disable_adc();
 			stop_conversion();
-			
-			initLink(&newLink);
-
-			if(ADC_curr_min >= WHITE_BLACK_BOUND){
-				newLink->e.itemMaterial = BLACK; // 1
-				// LCDWriteStringXY(pos2, 0, "B");
-			} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
-				newLink->e.itemMaterial = WHITE; // 3
-				// LCDWriteStringXY(pos2, 0, "W");
-			} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
-				newLink->e.itemMaterial = STEEL; // 2
-				// LCDWriteStringXY(pos2, 0, "S");
-			} else {
-				newLink->e.itemMaterial = ALUMINUM; // 4
-				// LCDWriteStringXY(pos2, 0, "A");
-			}
-			
-			enqueue(&head, &tail, &newLink);
-
-			// LCDWriteIntXY(10,1,ADC_counter,5);
-			// LCDWriteIntXY(5,0,ADC_curr_min,4);
-
-			ADC_curr_min = 1023;
-			ADC_counter = 0;
-			in_OR_flag = 0;
+			categorize();
 		}
 
 		if(item_counter == TOTAL_ITEM){
@@ -173,9 +149,6 @@ int main(int argc, char *argv[]){
 			case (0) :
 				goto POLLING_STAGE;
 				break;	//not needed but syntax is correct
-			case (1) :
-				goto REFLECTIVE_STAGE;
-				break;
 			case (2) :
 				goto BUCKET_STAGE;
 				break;
@@ -187,76 +160,40 @@ int main(int argc, char *argv[]){
 			default :
 				goto POLLING_STAGE;
 		}//switch STATE
-
-
-	REFLECTIVE_STAGE: // STATE = 1
-		PORTL = 0x20;
-
-		LCDWriteIntXY(10,0,INT0_counter,2);
-
-		enable_adc();
-		start_conversion();
-		
-		//Reset the state variable
-		STATE = 0;
-		goto POLLING_STAGE;
 	
 
-	BUCKET_STAGE:  // STATE = 2
+	BUCKET_STAGE:
 		PORTL = 0x40;
 
-		LCDWriteIntXY(14,0,INT1_counter,2);
+		LCDWriteIntXY(14,1,BUCKET_counter,2);
 
 		brake_dc_motor();
 
-		LCDWriteIntXY(0,0,head->e.itemMaterial,1);
-		LCDWriteIntXY(0,1,head->next->e.itemMaterial,1);
-
-		extra_steps = 0;
-		extra_plate = 0;
-		extra_piece = 0;
-
-// /* default rotation */							  //|  B  |  A  |  W  |  S  |
-// volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
-// 																				{NEG_DEG90, 0, DEG90, DEG180}, 	// current plate aluminum
-// 																			 	{DEG180, NEG_DEG90, 0 ,DEG90}, 	// current plate white
-// 																			 	{DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
-
-		if((head->e.itemMaterial-1) == head->next->e.itemMaterial){
-			same_dir_flag = 1;
-			same_cw_flag = 1;
-			extra_steps = NEG_DEG90;
-			extra_piece = 1;
-		} else if ((head->e.itemMaterial+1) == head->next->e.itemMaterial){
-			same_dir_flag = 1;
-			same_ccw_flag = 1;
-			extra_steps = DEG90;
-			extra_piece = 1;
-		}
+		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
 
 		switch(head->e.itemMaterial){
 			case(ALUMINUM):
-				StepperMotor_Rotate(rotations[current_plate][ALUMINUM] + extra_steps);
+				StepperMotor_Rotate(rotations[current_plate][ALUMINUM]);
 				aluminum_counter += 1;
-				current_plate = (ALUMINUM + extra_plate) % 4;
+				current_plate = ALUMINUM;
 				break;
 			
 			case(STEEL):
-				StepperMotor_Rotate(rotations[current_plate][STEEL] + extra_steps);
+				StepperMotor_Rotate(rotations[current_plate][STEEL]);
 				steel_counter += 1;
-				current_plate = (STEEL + extra_plate) % 4;
+				current_plate = STEEL;
 				break;
 			
 			case(WHITE):
-				StepperMotor_Rotate(rotations[current_plate][WHITE] + extra_steps);
+				StepperMotor_Rotate(rotations[current_plate][WHITE]);
 				white_counter += 1;
-				current_plate = (WHITE + extra_plate) % 4;
+				current_plate = WHITE;
 				break;
 			
 			case(BLACK):
-				StepperMotor_Rotate(rotations[current_plate][BLACK] + extra_steps);
+				StepperMotor_Rotate(rotations[current_plate][BLACK]);
 				black_counter += 1;
-				current_plate = (BLACK + extra_plate) % 4;
+				current_plate = BLACK;
 				break;
 		}
 
@@ -267,26 +204,22 @@ int main(int argc, char *argv[]){
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
-		if(same_dir_flag){
-			dequeue(&head, &tail, &rtnLink);
-			free(rtnLink);
-			PORTL = 0xC0;
-			mTimer(1000);
+		if(!OR && in_OR_flag){
+			PORTL = 0x70;
+			disable_adc();
+			stop_conversion();
+			categorize();
 		}
 
-		item_counter += extra_piece + 1;
-		same_dir_flag = 0;
-		same_cw_flag = 0;
-		same_ccw_flag = 0;
+		item_counter += 1;
 
 		//Reset the state variable
 		STATE = 0;
 		goto POLLING_STAGE;
 
-
 	
 
-	RESET: // STATE = 4
+	RESET:
 		PORTL = 0xF0;
 
 		brake_dc_motor();
@@ -296,6 +229,7 @@ int main(int argc, char *argv[]){
 		setup(&head, &tail);
 		ADC_curr_min = 1023;
 		ADC_counter = 0;
+		item_counter = 0;
 		aluminum_counter = 0;
 		steel_counter = 0;
 		black_counter = 0;
@@ -304,7 +238,7 @@ int main(int argc, char *argv[]){
 		INT0_counter = 0;
 
 
-	END: // STATE = 5
+	END:
 		disable_adc();
 		disable_dc_motor();
 		cli();
@@ -318,6 +252,33 @@ int main(int argc, char *argv[]){
 
 	return(0);
 
+}
+
+void categorize(){
+	initLink(&newLink);
+
+	if(ADC_curr_min >= WHITE_BLACK_BOUND){
+		newLink->e.itemMaterial = BLACK; // 1
+		// LCDWriteStringXY(pos2, 0, "B");
+	} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
+		newLink->e.itemMaterial = WHITE; // 3
+		// LCDWriteStringXY(pos2, 0, "W");
+	} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
+		newLink->e.itemMaterial = STEEL; // 2
+		// LCDWriteStringXY(pos2, 0, "S");
+	} else {
+		newLink->e.itemMaterial = ALUMINUM; // 4
+		// LCDWriteStringXY(pos2, 0, "A");
+	}
+	
+	enqueue(&head, &tail, &newLink);
+
+	// LCDWriteIntXY(10,1,ADC_counter,5);
+	// LCDWriteIntXY(5,0,ADC_curr_min,4);
+
+	ADC_curr_min = 1023;
+	ADC_counter = 0;
+	in_OR_flag = 0;
 }
 
 /* Interrupt Service Routine*/
@@ -335,12 +296,16 @@ ISR(ADC_vect){ //ADC conversion done
 
 /* Sensor INT */
 ISR(INT0_vect){ // OR sensor is logic high when object in
+	enable_adc();
+	start_conversion();
 	INT0_counter += 1;
+	LCDWriteIntXY(10,0,INT0_counter,2);
 	STATE = 1;
 }
 
 ISR(INT1_vect){ //catch EX falling edge
 	INT1_counter += 1;
+	LCDWriteIntXY(14,0,INT1_counter,2);
 	STATE = 2; // bucket stage
 }
 

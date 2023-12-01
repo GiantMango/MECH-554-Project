@@ -7,11 +7,16 @@
 #include "lcd.h"
 
 /* GLOBAL VARIABLES */
+volatile unsigned char start_dc_motor_flag;
+volatile unsigned char current_step;
+volatile unsigned char temp_step;
 volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
 
-volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
-																												15, 14, 13, 12, 11, 10};
-volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {11, 12, 13, 14, 16, 17, 18, 20};
+volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {19, 18, 17, 16, 15,
+																												14, 13, 12, 11, 10,
+																												9, 8, 7, 6};
+volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {7, 9, 11, 14, 6,
+																												 18, 19, 20};
 
 
 /* Initialize Stepper Motor to Black */
@@ -50,17 +55,12 @@ void StepperMotor_CW(int num_steps){ //50 100
 		/* Acceleration and Deceleration Profile */
 		if((i-1) < ACCEL_TOTAL_STEPS){ 
 			mTimer(accel_speed[i-1]);
-		} else if (((i-1) > (num_steps - DECCEL_TOTAL_STEPS - 1))) {
+		} else if ((i-1) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
 			mTimer(decel_speed[j]);
 			j += 1;
 		} else {
 			mTimer(accel_speed[ACCEL_TOTAL_STEPS - 1]);
 		}
-
-		if (same_dir_flag && ((i-1) > (num_steps/2 - 15))){
-			run_dc_motor();
-		}
-
 		/* End of Accel/Deccel Profile */
 
 	}
@@ -86,11 +86,6 @@ void StepperMotor_CCW(int num_steps){
 		} else {
 			mTimer(accel_speed[ACCEL_TOTAL_STEPS - 1]);
 		}
-
-		if (same_dir_flag && ((i-2) > (num_steps/2 - 30))){
-			run_dc_motor();
-		}
-
 		/* End of Accel/Deccel Profile */			
 
 	}

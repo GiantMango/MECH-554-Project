@@ -16,15 +16,9 @@
 #define DEG90                 50
 #define DEG180                100
 
-#define ACCEL_TOTAL_STEPS     11
+#define ACCEL_TOTAL_STEPS     14
 #define DECCEL_TOTAL_STEPS    8
 
-volatile unsigned char same_dir_flag;
-volatile unsigned char same_cw_flag;
-volatile unsigned char same_ccw_flag;
-volatile unsigned char start_dc_motor_flag;
-volatile unsigned char current_step;
-volatile unsigned char temp_step;
 
 void init_stepper_motor();
 void StepperMotor_Rotate(int num_steps);
