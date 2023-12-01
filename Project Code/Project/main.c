@@ -60,6 +60,9 @@ volatile unsigned char black_counter = 0;
 volatile unsigned char current_plate;
 volatile unsigned char current_part;
 volatile unsigned int	 current_reading;
+volatile signed char extra_steps;
+volatile unsigned char extra_plate;
+volatile unsigned char extra_piece;
 
 /* default rotation */							  //|  B  |  A  |  W  |  S  |
 volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
@@ -97,7 +100,7 @@ int main(int argc, char *argv[]){
 	free_running_adc();
 
 	/* Initialize DC Motor */
-	init_pwm(90);
+	init_pwm(70);
 	init_dc_motor();
 
 	/* Initialize Stepper Motor and Plate Position */
@@ -111,18 +114,18 @@ int main(int argc, char *argv[]){
 	// LCDWriteStringXY(6, 0, "W");
 	// LCDWriteStringXY(9, 0, "B");
 
-	sei();	// Note this sets the Global Enable for all interrupts
+	sei();
 
-	goto POLLING_STAGE;
+
+	goto POLLING_STAGE; // STATE = 0
 
 	// POLLING STATE
 	POLLING_STAGE:
 		PORTL = 0x10;
-		// LCDWriteIntXY(0,0,STATE, 1);
-		// LCDWriteIntXY(10,0,INT2_counter,2);
-		// LCDWriteIntXY(14,0,INT3_counter,2);
 
 		run_dc_motor();
+
+		LCDWriteIntXY(8,0,INT1_counter,2);
 
 		// LCDWriteIntXY(0, 1, aluminum_counter, 2);
 		// LCDWriteIntXY(3, 1, steel_counter, 2);
@@ -155,7 +158,6 @@ int main(int argc, char *argv[]){
 			// LCDWriteIntXY(10,1,ADC_counter,5);
 			// LCDWriteIntXY(5,0,ADC_curr_min,4);
 
-
 			ADC_curr_min = 1023;
 			ADC_counter = 0;
 			in_OR_flag = 0;
@@ -187,7 +189,7 @@ int main(int argc, char *argv[]){
 		}//switch STATE
 
 
-	REFLECTIVE_STAGE:
+	REFLECTIVE_STAGE: // STATE = 1
 		PORTL = 0x20;
 
 		LCDWriteIntXY(10,0,INT0_counter,2);
@@ -200,38 +202,61 @@ int main(int argc, char *argv[]){
 		goto POLLING_STAGE;
 	
 
-	BUCKET_STAGE:
+	BUCKET_STAGE:  // STATE = 2
 		PORTL = 0x40;
 
 		LCDWriteIntXY(14,0,INT1_counter,2);
 
 		brake_dc_motor();
 
-		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
+		LCDWriteIntXY(0,0,head->e.itemMaterial,1);
+		LCDWriteIntXY(0,1,head->next->e.itemMaterial,1);
+
+		extra_steps = 0;
+		extra_plate = 0;
+		extra_piece = 0;
+
+// /* default rotation */							  //|  B  |  A  |  W  |  S  |
+// volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
+// 																				{NEG_DEG90, 0, DEG90, DEG180}, 	// current plate aluminum
+// 																			 	{DEG180, NEG_DEG90, 0 ,DEG90}, 	// current plate white
+// 																			 	{DEG90, DEG180, NEG_DEG90, 0}}; // current plate steel
+
+		if((head->e.itemMaterial-1) == head->next->e.itemMaterial){
+			same_dir_flag = 1;
+			same_cw_flag = 1;
+			extra_steps = NEG_DEG90;
+			extra_piece = 1;
+		} else if ((head->e.itemMaterial+1) == head->next->e.itemMaterial){
+			same_dir_flag = 1;
+			same_ccw_flag = 1;
+			extra_steps = DEG90;
+			extra_piece = 1;
+		}
 
 		switch(head->e.itemMaterial){
 			case(ALUMINUM):
-				StepperMotor_Rotate(rotations[current_plate][ALUMINUM]);
+				StepperMotor_Rotate(rotations[current_plate][ALUMINUM] + extra_steps);
 				aluminum_counter += 1;
-				current_plate = ALUMINUM;
+				current_plate = (ALUMINUM + extra_plate) % 4;
 				break;
 			
 			case(STEEL):
-				StepperMotor_Rotate(rotations[current_plate][STEEL]);
+				StepperMotor_Rotate(rotations[current_plate][STEEL] + extra_steps);
 				steel_counter += 1;
-				current_plate = STEEL;
+				current_plate = (STEEL + extra_plate) % 4;
 				break;
 			
 			case(WHITE):
-				StepperMotor_Rotate(rotations[current_plate][WHITE]);
+				StepperMotor_Rotate(rotations[current_plate][WHITE] + extra_steps);
 				white_counter += 1;
-				current_plate = WHITE;
+				current_plate = (WHITE + extra_plate) % 4;
 				break;
 			
 			case(BLACK):
-				StepperMotor_Rotate(rotations[current_plate][BLACK]);
+				StepperMotor_Rotate(rotations[current_plate][BLACK] + extra_steps);
 				black_counter += 1;
-				current_plate = BLACK;
+				current_plate = (BLACK + extra_plate) % 4;
 				break;
 		}
 
@@ -242,17 +267,26 @@ int main(int argc, char *argv[]){
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
-		item_counter += 1;
+		if(same_dir_flag){
+			dequeue(&head, &tail, &rtnLink);
+			free(rtnLink);
+			PORTL = 0xC0;
+			mTimer(1000);
+		}
+
+		item_counter += extra_piece + 1;
+		same_dir_flag = 0;
+		same_cw_flag = 0;
+		same_ccw_flag = 0;
 
 		//Reset the state variable
 		STATE = 0;
 		goto POLLING_STAGE;
 
 
-
 	
 
-	RESET:
+	RESET: // STATE = 4
 		PORTL = 0xF0;
 
 		brake_dc_motor();
@@ -270,7 +304,7 @@ int main(int argc, char *argv[]){
 		INT0_counter = 0;
 
 
-	END:
+	END: // STATE = 5
 		disable_adc();
 		disable_dc_motor();
 		cli();
