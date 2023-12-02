@@ -46,16 +46,16 @@ void StepperMotor_Rotate(int num_steps){
 
 void StepperMotor_CW(int num_steps){ //50 100
 	int j = 0;
-	for(int i = 1; i < (num_steps+1); i++){
-		temp_step = (current_step + i) % 4;
+	for(int i = 0; i < num_steps; i++){
+		temp_step = (current_step + i + 1) % 4;
 		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp_step];
 
 		// mTimer(18);
 
 		/* Acceleration and Deceleration Profile */
-		if((i-1) < ACCEL_TOTAL_STEPS){ 
-			mTimer(accel_speed[i-1]);
-		} else if ((i-1) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
+		if((i) < ACCEL_TOTAL_STEPS){ 
+			mTimer(accel_speed[i]);
+		} else if ((i) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
 			mTimer(decel_speed[j]);
 			j += 1;
 		} else {
@@ -71,16 +71,16 @@ void StepperMotor_CW(int num_steps){ //50 100
 
 void StepperMotor_CCW(int num_steps){
 	int j = 0;
-	for(int i = 2; i < (num_steps + 2); i++){
-		temp_step = 3 - (current_step+i)%4;
+	for(int i = 0; i < num_steps; i++){
+		temp_step = (current_step+i+3)%4;
 		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp_step];
 		
 		// mTimer(18);
 
 		// /* Acceleration and Deceleration Profile */
-		if((i-2) < ACCEL_TOTAL_STEPS){ 
-			mTimer(accel_speed[i-2]);
-		} else if ((i-2) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
+		if((i) < ACCEL_TOTAL_STEPS){ 
+			mTimer(accel_speed[i]);
+		} else if ((i) > (num_steps - DECCEL_TOTAL_STEPS - 1)) {
 			mTimer(decel_speed[j]);
 			j += 1;
 		} else {
