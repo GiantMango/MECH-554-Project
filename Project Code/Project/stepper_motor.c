@@ -12,11 +12,16 @@ volatile unsigned char current_step;
 volatile unsigned char temp_step;
 volatile unsigned char steps[4] = {STEP1, STEP2, STEP3, STEP4};
 
-volatile unsigned int accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
+volatile unsigned char accel_speed[ACCEL_TOTAL_STEPS] = {20, 19, 18, 17, 16,
 																												15, 14, 13, 12, 11,
 																												10,	9, 8, 7};
-volatile unsigned int decel_speed[DECCEL_TOTAL_STEPS] = {8, 9, 10, 11,
+volatile unsigned char decel_speed[DECCEL_TOTAL_STEPS] = {8, 9, 10, 11,
 																												12, 14, 16, 18, 20};
+
+volatile unsigned char ind[4][4] = {{0, 3, 2, 1},
+																	  {1, 0, 3, 2},
+																	  {2, 1, 0, 3},
+																	  {3, 2, 1, 0}};
 
 
 /* Initialize Stepper Motor to Black */
@@ -72,7 +77,7 @@ void StepperMotor_CW(int num_steps){ //50 100
 void StepperMotor_CCW(int num_steps){
 	int j = 0;
 	for(int i = 0; i < num_steps; i++){
-		temp_step = (current_step+i+3)%4;
+		temp_step = ind[current_step][(i+1)%4];
 		STEPPER_MOTOR_PORT = (STEPPER_MOTOR_PORT & ~STEPPER_MOTOR_MASK) | steps[temp_step];
 		
 		// mTimer(18);
