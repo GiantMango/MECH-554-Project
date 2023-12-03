@@ -42,7 +42,7 @@
 
 #define TOTAL_ITEM							48
 
-#define CALIBRATION
+// #define CALIBRATION
 #define CALIBRATION_MODE				0
 #define WORK_MODE								1
 
