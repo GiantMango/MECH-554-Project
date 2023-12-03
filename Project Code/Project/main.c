@@ -36,13 +36,13 @@
 #define WHITE				2
 #define ALUMINUM		3
 
-#define ALUMINUM_STEEL_BOUND		200
+#define ALUMINUM_STEEL_BOUND		400
 #define STEEL_WHITE_BOUND				700
-#define WHITE_BLACK_BOUND				905
+#define WHITE_BLACK_BOUND				915
 
 #define TOTAL_ITEM							48
 
-// #define CALIBRATION
+#define CALIBRATION
 #define CALIBRATION_MODE				0
 #define WORK_MODE								1
 
@@ -182,6 +182,7 @@ int main(int argc, char *argv[]){
 	
 
 	BUCKET_STAGE:
+		STATE = 0;
 		PORTL = 0x40;
 		BUCKET_counter += 1;
 		// LCDWriteIntXY(14,1,BUCKET_counter,2);
@@ -234,8 +235,7 @@ int main(int argc, char *argv[]){
 		LCDWriteIntXY(6, 1, white_counter, 2);
 		LCDWriteIntXY(9, 1, black_counter, 2);
 
-		//Reset the state variable
-		STATE = 0;
+
 		goto POLLING_STAGE;
 
 	
