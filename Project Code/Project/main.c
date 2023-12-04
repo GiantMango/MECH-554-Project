@@ -57,18 +57,27 @@
 /* Global Variable */
 volatile unsigned char STATE = 0;
 volatile unsigned char in_OR_flag = 0;
+volatile unsigned char ramp_down_flag;
 
-volatile unsigned char INT0_counter = 0; // counts enters OR
-volatile unsigned char INT1_counter = 0; // counts EX
-volatile unsigned char INT5_counter = 0; // counts leaves OR
-volatile unsigned int  ADC_counter = 0;
-volatile unsigned char item_counter = 0;
-volatile unsigned char BUCKET_counter = 0;
+volatile unsigned char INT0_counter; // counts enters OR
+volatile unsigned char INT1_counter; // counts EX
+volatile unsigned char INT4_counter; // pause
+volatile unsigned char INT5_counter; // ramp down
+volatile unsigned int  ADC_counter;
+volatile unsigned char item_counter;
+volatile unsigned char BUCKET_counter;
 
-volatile unsigned char aluminum_counter = 0;
-volatile unsigned char steel_counter = 0;
-volatile unsigned char white_counter = 0;
-volatile unsigned char black_counter = 0;
+/* Dropped Item Counter */
+volatile unsigned char aluminum_counter;
+volatile unsigned char steel_counter;
+volatile unsigned char white_counter;
+volatile unsigned char black_counter;
+
+/* Sorted Item Counter */
+volatile unsigned char  queue_aluminum_counter;
+volatile unsigned char  queue_steel_counter;
+volatile unsigned char  queue_white_counter;
+volatile unsigned char  queue_black_counter;
 
 volatile unsigned char current_plate;
 volatile unsigned char current_part;
@@ -161,7 +170,13 @@ int main(int argc, char *argv[]){
 		if(item_counter == TOTAL_ITEM){
 			mTimer(200);
 			STATE = 5;
-			goto END;
+		}
+
+		if(ramp_down_flag && (size(&head, &tail) == 0) && (BUCKET_counter != 0)){
+			mTimer(200);
+			PORTL = 0x70;
+			STATE = 3;
+			goto RAMP_DOWN;
 		}
 
 		switch(STATE){
@@ -171,8 +186,11 @@ int main(int argc, char *argv[]){
 			case (2) :
 				goto BUCKET_STAGE;
 				break;
+			case (3) :
+				goto RAMP_DOWN;
+				break;
 			case (4) :
-				goto RESET;
+				goto PAUSE;
 				break;
 			case (5) :
 				goto END;
@@ -235,31 +253,48 @@ int main(int argc, char *argv[]){
 		LCDWriteIntXY(6, 1, white_counter, 2);
 		LCDWriteIntXY(9, 1, black_counter, 2);
 
-
 		goto POLLING_STAGE;
 
 	
+	RAMP_DOWN:
+		PORTL = 0xC0;
+		brake_dc_motor();
+		LCDWriteIntXY(0, 1, aluminum_counter, 2);
+		LCDWriteIntXY(3, 1, steel_counter, 2);
+		LCDWriteIntXY(6, 1, white_counter, 2);
+		LCDWriteIntXY(9, 1, black_counter, 2);
+		LCDWriteStringXY(11,0,"RAMP");
 
-	RESET:
-		PORTL = 0xF0;
+		aluminum_counter = 0;
+		steel_counter = 0;
+		white_counter = 0;
+		black_counter = 0;
+		ADC_curr_min = 1023;
+		ADC_counter = 0;
+		INT0_counter = 0;
+		INT1_counter = 0;
+		INT4_counter = 0;
+		INT5_counter = 0;
+		STATE = 0;
+
+
+	PAUSE:
+		PORTL = 0x03;
 
 		brake_dc_motor();
 
-		/* Resetting all counters */
-		clearQueue(&head, &tail);
-		setup(&head, &tail);
-		ADC_curr_min = 1023;
-		ADC_max_min = 0;
-		ADC_min_min = 1023;
-		ADC_counter = 0;
-		item_counter = 0;
-		aluminum_counter = 0;
-		steel_counter = 0;
-		black_counter = 0;
-		white_counter = 0;
-		INT1_counter = 0;
-		INT0_counter = 0;
+		LCDWriteIntXY(0, 1, queue_aluminum_counter, 2);
+		LCDWriteIntXY(3, 1, queue_steel_counter, 2);
+		LCDWriteIntXY(6, 1, queue_white_counter, 2);
+		LCDWriteIntXY(9, 1, queue_black_counter, 2);
+
+		queue_aluminum_counter = 0;
+		queue_steel_counter = 0;
+		queue_white_counter = 0;
+		queue_black_counter = 0;
+
 		STATE = 0;
+
 
 	END:
 		disable_adc();
@@ -283,15 +318,19 @@ void categorize(){
 
 	if(ADC_curr_min >= WHITE_BLACK_BOUND){
 		newLink->e.itemMaterial = BLACK; // 1
+		queue_black_counter += 1;
 		// LCDWriteStringXY(pos2, 0, "B");
 	} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
 		newLink->e.itemMaterial = WHITE; // 3
+		queue_white_counter += 1;
 		// LCDWriteStringXY(pos2, 0, "W");
 	} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
 		newLink->e.itemMaterial = STEEL; // 2
+		queue_steel_counter += 1;
 		// LCDWriteStringXY(pos2, 0, "S");
 	} else {
 		newLink->e.itemMaterial = ALUMINUM; // 4
+		queue_aluminum_counter += 1;
 		// LCDWriteStringXY(pos2, 0, "A");
 	}
 	
@@ -330,6 +369,7 @@ ISR(ADC_vect){ //ADC conversion done
 		ADC_curr_min = ADC_result;
 	}
 
+	start_conversion();
 	ADC_counter += 1;
 	in_OR_flag = 1;
 }
@@ -353,10 +393,13 @@ ISR(INT4_vect){
 	mTimer(25);
 	while(!SWITCH1);
 	mTimer(25);
-	STATE = 4; // reset
+	STATE = 4; // PAUSE
 }
 
-// ISR(INT5_vect){ // catch OR rising edge
-// 	INT5_counter += 1;
-// 	STATE = 3; 
-// }
+ISR(INT5_vect){
+	INT5_counter += 1;
+	mTimer(25);
+	while(!SWITCH2);
+	mTimer(25);
+	ramp_down_flag = 1;
+}

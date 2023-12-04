@@ -9,8 +9,8 @@
 /* Initialize DC motor */
 void init_dc_motor(){
 	// Enable switch button interrupt
-	EIMSK |= (_BV(INT4));
-	EICRB |= (_BV(ISC41));		// falling edge trigger
+	EIMSK |= (_BV(INT4) | _BV(INT5));
+	EICRB |= (_BV(ISC41)| _BV(ISC51));		// falling edge trigger
 
 	// GPIO
 	DDRE &= ~(_BV(PE1) | _BV(PE0)); // used as input
