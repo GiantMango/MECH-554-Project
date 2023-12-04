@@ -57,7 +57,7 @@
 /* Global Variable */
 volatile unsigned char STATE = 0;
 volatile unsigned char in_OR_flag = 0;
-volatile unsigned char ramp_down_flag;
+volatile unsigned char ramp_down_flag = 0;
 
 volatile unsigned char INT0_counter; // counts enters OR
 volatile unsigned char INT1_counter; // counts EX
@@ -119,7 +119,6 @@ int main(int argc, char *argv[]){
 
 	/* Initialize ADC */
 	init_adc();
-	free_running_adc();
 
 	/* Initialize DC Motor */
 	init_pwm(DC_MOTOR_SPEED);
@@ -151,10 +150,11 @@ int main(int argc, char *argv[]){
 
 
 		if(MODE){
+			if(in_OR_flag){
+				start_conversion();
+			}
 			if(!OR && in_OR_flag){
 				PORTL = 0x70;
-				disable_adc();
-				stop_conversion();
 				categorize();
 			}
 		} else {
@@ -239,10 +239,11 @@ int main(int argc, char *argv[]){
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
+		if(in_OR_flag){
+			start_conversion();
+		}
 		if(!OR && in_OR_flag){
 			PORTL = 0x70;
-			disable_adc();
-			stop_conversion();
 			categorize();
 		}
 
@@ -287,6 +288,7 @@ int main(int argc, char *argv[]){
 		LCDWriteIntXY(3, 1, queue_steel_counter, 2);
 		LCDWriteIntXY(6, 1, queue_white_counter, 2);
 		LCDWriteIntXY(9, 1, queue_black_counter, 2);
+		LCDWriteStringXY(11,0,"PAUS");
 
 		queue_aluminum_counter = 0;
 		queue_steel_counter = 0;
@@ -369,14 +371,12 @@ ISR(ADC_vect){ //ADC conversion done
 		ADC_curr_min = ADC_result;
 	}
 
-	start_conversion();
 	ADC_counter += 1;
 	in_OR_flag = 1;
 }
 
 /* Sensor INT */
 ISR(INT0_vect){ // OR sensor is logic high when object in
-	enable_adc();
 	start_conversion();
 	INT0_counter += 1;
 	// LCDWriteIntXY(10,0,INT0_counter,2);
