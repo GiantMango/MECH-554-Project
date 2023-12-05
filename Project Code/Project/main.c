@@ -257,6 +257,9 @@ int main(int argc, char *argv[]){
 			LCDWriteIntXY(3, 1, steel_counter, 2);
 			LCDWriteIntXY(6, 1, white_counter, 2);
 			LCDWriteIntXY(9, 1, black_counter, 2);
+			if(INT4_counter != 0){
+				LCDWriteIntXY(14,1, size(&head, &tail), 2);
+			}
 		}
 
 		goto POLLING_STAGE;
@@ -270,7 +273,6 @@ int main(int argc, char *argv[]){
 		LCDWriteIntXY(3, 1, steel_counter, 2);
 		LCDWriteIntXY(6, 1, white_counter, 2);
 		LCDWriteIntXY(9, 1, black_counter, 2);
-		LCDWriteStringXY(10,0,"RD");
 
 		aluminum_counter = 0;
 		steel_counter = 0;
@@ -288,7 +290,6 @@ int main(int argc, char *argv[]){
 
 	PAUSE:
 		PORTL = 0xC0;
-
 		brake_dc_motor();
 
 		if(MODE){
@@ -305,6 +306,7 @@ int main(int argc, char *argv[]){
 
 
 	END:
+		brake_dc_motor();
 		disable_adc();
 		disable_dc_motor();
 		cli();
@@ -319,20 +321,15 @@ void categorize(){
 
 	if(ADC_curr_min >= WHITE_BLACK_BOUND){
 		newLink->e.itemMaterial = BLACK; // 1
-		queue_black_counter += 1;
 	} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
 		newLink->e.itemMaterial = WHITE; // 3
-		queue_white_counter += 1;
 	} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
 		newLink->e.itemMaterial = STEEL; // 2
-		queue_steel_counter += 1;
 	} else {
 		newLink->e.itemMaterial = ALUMINUM; // 4
-		queue_aluminum_counter += 1;
 	}
 	
 	enqueue(&head, &tail, &newLink);
-
 
 	ADC_curr_min = 1023;
 	ADC_counter = 0;
