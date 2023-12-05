@@ -57,31 +57,34 @@
 /* Global Variable */
 volatile unsigned char STATE = 0;
 volatile unsigned char in_OR_flag = 0;
-volatile unsigned char ramp_down_flag = 0;
+unsigned char ramp_down_flag = 0;
+unsigned char pause_flag = 0;
 
-volatile unsigned char INT0_counter; // counts enters OR
-volatile unsigned char INT1_counter; // counts EX
-volatile unsigned char INT4_counter; // pause
-volatile unsigned char INT5_counter; // ramp down
-volatile unsigned int  ADC_counter;
-volatile unsigned char item_counter = 0;
-volatile unsigned char BUCKET_counter;
+unsigned char INT0_counter = 0; // counts enters OR
+unsigned char INT1_counter = 0; // counts EX
+unsigned char INT4_counter = 0; // pause
+unsigned char INT5_counter = 0; // ramp down
+unsigned int  ADC_counter = 0;
+unsigned char item_counter = 0;
+unsigned char BUCKET_counter = 0;
 
 /* Dropped Item Counter */
-volatile unsigned char aluminum_counter = 0;
-volatile unsigned char steel_counter = 0;
-volatile unsigned char white_counter = 0;
-volatile unsigned char black_counter = 0;
+unsigned char aluminum_counter = 0;
+unsigned char steel_counter = 0;
+unsigned char white_counter = 0;
+unsigned char black_counter = 0;
 
 /* Sorted Item Counter */
-volatile unsigned char  queue_aluminum_counter;
-volatile unsigned char  queue_steel_counter;
-volatile unsigned char  queue_white_counter;
-volatile unsigned char  queue_black_counter;
+unsigned char  queue_aluminum_counter = 0;
+unsigned char  queue_steel_counter = 0;
+unsigned char  queue_white_counter = 0;
+unsigned char  queue_black_counter = 0;
 
 volatile unsigned char current_plate;
 volatile unsigned char current_part;
 volatile unsigned int	 current_reading;
+
+
 
 /* default rotation */							  //|  B  |  A  |  W  |  S  |
 volatile signed char rotations[4][4] = {{0, DEG90, DEG180, NEG_DEG90}, 	// current plate black
@@ -143,15 +146,13 @@ int main(int argc, char *argv[]){
 
 	goto POLLING_STAGE;
 
-	// POLLING STATE
 	POLLING_STAGE:
 		PORTL = 0x10;
-		// LCDWriteIntXY(0,0,STATE, 1);
-		// LCDWriteIntXY(10,0,INT2_counter,2);
-		// LCDWriteIntXY(14,0,INT3_counter,2);
 
-		run_dc_motor();
-
+		if(!pause_flag){
+			run_dc_motor();	
+		}
+		
 
 		if(MODE){
 			if(in_OR_flag){
@@ -174,10 +175,8 @@ int main(int argc, char *argv[]){
 			STATE = 5;
 		}
 
-		if(ramp_down_flag && (size(&head, &tail) == 0) && (BUCKET_counter != 0)){
-			PORTL = 0x70;
+		if(ramp_down_flag && (size(&head, &tail) == 0)){
 			STATE = 3;
-			goto RAMP_DOWN;
 		}
 
 		switch(STATE){
@@ -212,7 +211,6 @@ int main(int argc, char *argv[]){
 		}
 		brake_dc_motor();
 
-		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
 
 		switch(head->e.itemMaterial){
 			case(ALUMINUM):
@@ -252,8 +250,6 @@ int main(int argc, char *argv[]){
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
-
-
 		item_counter += 1;
 
 		if(MODE){
@@ -267,12 +263,14 @@ int main(int argc, char *argv[]){
 
 	
 	RAMP_DOWN:
-		PORTL = 0xC0;
+		PORTL = 0xB0;
+		mTimer(200);
 		brake_dc_motor();
 		LCDWriteIntXY(0, 1, aluminum_counter, 2);
 		LCDWriteIntXY(3, 1, steel_counter, 2);
 		LCDWriteIntXY(6, 1, white_counter, 2);
 		LCDWriteIntXY(9, 1, black_counter, 2);
+		LCDWriteStringXY(10,0,"RD");
 
 		aluminum_counter = 0;
 		steel_counter = 0;
@@ -284,42 +282,26 @@ int main(int argc, char *argv[]){
 		INT1_counter = 0;
 		INT4_counter = 0;
 		INT5_counter = 0;
-		STATE = 0;
+		ramp_down_flag = 0;
+		goto END;
 
 
 	PAUSE:
-		PORTL = 0x03;
+		PORTL = 0xC0;
 
 		brake_dc_motor();
 
 		if(MODE){
-			LCDWriteIntXY(0, 1, queue_aluminum_counter, 2);
-			LCDWriteIntXY(3, 1, queue_steel_counter, 2);
-			LCDWriteIntXY(6, 1, queue_white_counter, 2);
-			LCDWriteIntXY(9, 1, queue_black_counter, 2);
-
-			queue_aluminum_counter = 0;
-			queue_steel_counter = 0;
-			queue_white_counter = 0;
-			queue_black_counter = 0;
-			aluminum_counter = 0;
-			steel_counter = 0;
-			white_counter = 0;
-			black_counter = 0;
-			ADC_curr_min = 1023;
-			ADC_counter = 0;
-			INT0_counter = 0;
-			INT1_counter = 0;
-			INT4_counter = 0;
-			INT5_counter = 0;
-		} else {
-			ADC_curr_min = 1023;
-			ADC_max_min = 0;
-			ADC_min_min = 1023;
-
+			LCDWriteIntXY(0, 1, aluminum_counter, 2);
+			LCDWriteIntXY(3, 1, steel_counter, 2);
+			LCDWriteIntXY(6, 1, white_counter, 2);
+			LCDWriteIntXY(9, 1, black_counter, 2);
+			LCDWriteStringXY(14,0,"US");
+			LCDWriteIntXY(14,1, size(&head, &tail), 2);
 		}
 
 		STATE = 0;
+		goto POLLING_STAGE;
 
 
 	END:
@@ -338,25 +320,19 @@ void categorize(){
 	if(ADC_curr_min >= WHITE_BLACK_BOUND){
 		newLink->e.itemMaterial = BLACK; // 1
 		queue_black_counter += 1;
-		// LCDWriteStringXY(pos2, 0, "B");
 	} else if(ADC_curr_min >= STEEL_WHITE_BOUND){
 		newLink->e.itemMaterial = WHITE; // 3
 		queue_white_counter += 1;
-		// LCDWriteStringXY(pos2, 0, "W");
 	} else if(ADC_curr_min >= ALUMINUM_STEEL_BOUND){
 		newLink->e.itemMaterial = STEEL; // 2
 		queue_steel_counter += 1;
-		// LCDWriteStringXY(pos2, 0, "S");
 	} else {
 		newLink->e.itemMaterial = ALUMINUM; // 4
 		queue_aluminum_counter += 1;
-		// LCDWriteStringXY(pos2, 0, "A");
 	}
 	
 	enqueue(&head, &tail, &newLink);
 
-	// LCDWriteIntXY(10,1,ADC_counter,5);
-	// LCDWriteIntXY(5,0,ADC_curr_min,4);
 
 	ADC_curr_min = 1023;
 	ADC_counter = 0;
@@ -397,27 +373,39 @@ ISR(INT0_vect){ // OR sensor is logic high when object in
 	enable_adc();
 	start_conversion();
 	INT0_counter += 1;
-	// LCDWriteIntXY(10,0,INT0_counter,2);
 }
 
 ISR(INT1_vect){ //catch EX falling edge
 	INT1_counter += 1;
-	// LCDWriteIntXY(14,0,INT1_counter,2);
 	STATE = 2; // bucket stage
 }
 
 /* Switches INT */
 ISR(INT4_vect){
-	mTimer(25);
-	while(!SWITCH1);
-	mTimer(25);
-	STATE = 4; // PAUSE
+	mTimer(20);
+	if(SWITCH1 == 0){
+		INT4_counter += 1;
+		if(INT4_counter%2 == 1){
+			pause_flag = 1;
+		} else {
+			pause_flag = 0;
+		}
+		STATE = 4; // PAUSE
+		while(SWITCH1 == 0);
+		mTimer(20);
+	}
 }
 
-ISR(INT5_vect){
-	INT5_counter += 1;
-	mTimer(25);
-	while(!SWITCH2);
-	mTimer(25);
+ISR(INT5_vect){ // RAMP DOWN BUTTON
+	mTimer(20);
+	if(SWITCH2 == 0){
+		INT5_counter += 1;
+		while(SWITCH2 == 0);
+		mTimer(20);
+		intTimer();
+	}
+}
+
+ISR(TIMER3_COMPA_vect){
 	ramp_down_flag = 1;
 }

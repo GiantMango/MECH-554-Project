@@ -9,8 +9,8 @@
 #define DC_FORWARD      0x0B
 #define DC_BACKWARD     0x0E
 
-#define SWITCH1         (PINE & 0x01)
-#define SWITCH2         (PINE & 0x02)
+#define SWITCH1         (PINE & 0x10)
+#define SWITCH2         (PINE & 0x20)
 
 volatile unsigned int kill_flag;
 

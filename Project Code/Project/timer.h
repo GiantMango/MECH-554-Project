@@ -2,7 +2,6 @@
 #define TIMER_H_
 
 void mTimer(int count);
-// void uTimer(int count);
-// void intTimer(int count);
+void intTimer();
 
 #endif /* MTIMER_H_ */
