@@ -36,9 +36,9 @@
 #define WHITE				2
 #define ALUMINUM		3
 
-#define ALUMINUM_STEEL_BOUND		400
+#define ALUMINUM_STEEL_BOUND		100
 #define STEEL_WHITE_BOUND				700
-#define WHITE_BLACK_BOUND				915
+#define WHITE_BLACK_BOUND				898 //WHITE upper is 880 lower is 824
 
 #define TOTAL_ITEM							48
 
@@ -47,10 +47,10 @@
 #define WORK_MODE								1
 
 #ifdef CALIBRATION
-#   define DC_MOTOR_SPEED 80
+#   define DC_MOTOR_SPEED 70
 #		define MODE						0
 #else
-#   define DC_MOTOR_SPEED 115
+#   define DC_MOTOR_SPEED 125
 #		define MODE						1
 #endif
 
@@ -64,14 +64,14 @@ volatile unsigned char INT1_counter; // counts EX
 volatile unsigned char INT4_counter; // pause
 volatile unsigned char INT5_counter; // ramp down
 volatile unsigned int  ADC_counter;
-volatile unsigned char item_counter;
+volatile unsigned char item_counter = 0;
 volatile unsigned char BUCKET_counter;
 
 /* Dropped Item Counter */
-volatile unsigned char aluminum_counter;
-volatile unsigned char steel_counter;
-volatile unsigned char white_counter;
-volatile unsigned char black_counter;
+volatile unsigned char aluminum_counter = 0;
+volatile unsigned char steel_counter = 0;
+volatile unsigned char white_counter = 0;
+volatile unsigned char black_counter = 0;
 
 /* Sorted Item Counter */
 volatile unsigned char  queue_aluminum_counter;
@@ -130,10 +130,14 @@ int main(int argc, char *argv[]){
 
 	setup(&head, &tail);
 
-	LCDWriteStringXY(0, 0, "A");
-	LCDWriteStringXY(3, 0, "S");
-	LCDWriteStringXY(6, 0, "W");
-	LCDWriteStringXY(9, 0, "B");
+	if(MODE){
+		LCDWriteStringXY(0, 0, "A");
+		LCDWriteStringXY(3, 0, "S");
+		LCDWriteStringXY(6, 0, "W");
+		LCDWriteStringXY(9, 0, "B");
+	} else{
+		free_running_adc();
+	}
 
 	sei();	// Note this sets the Global Enable for all interrupts
 
@@ -152,10 +156,9 @@ int main(int argc, char *argv[]){
 		if(MODE){
 			if(in_OR_flag){
 				start_conversion();
-			}
-			if(!OR && in_OR_flag){
-				PORTL = 0x70;
-				categorize();
+				if(!OR){
+					categorize();
+				}
 			}
 		} else {
 			if(!OR && in_OR_flag){
@@ -165,15 +168,13 @@ int main(int argc, char *argv[]){
 				calibration();
 			}
 		}
-
-
+		
 		if(item_counter == TOTAL_ITEM){
 			mTimer(200);
 			STATE = 5;
 		}
 
 		if(ramp_down_flag && (size(&head, &tail) == 0) && (BUCKET_counter != 0)){
-			mTimer(200);
 			PORTL = 0x70;
 			STATE = 3;
 			goto RAMP_DOWN;
@@ -203,7 +204,12 @@ int main(int argc, char *argv[]){
 		STATE = 0;
 		PORTL = 0x40;
 		BUCKET_counter += 1;
-		// LCDWriteIntXY(14,1,BUCKET_counter,2);
+		if(in_OR_flag){
+			start_conversion();
+			if(!OR){
+				categorize();
+			}
+		}
 		brake_dc_motor();
 
 		// LCDWriteIntXY(0,1,head->e.itemMaterial,1);
@@ -234,25 +240,28 @@ int main(int argc, char *argv[]){
 				break;
 		}
 
+
 		run_dc_motor();
+		if(in_OR_flag){
+			start_conversion();
+			if(!OR){
+				categorize();
+			}
+		}
 		
 		dequeue(&head, &tail, &rtnLink);
 		free(rtnLink);
 
-		if(in_OR_flag){
-			start_conversion();
-		}
-		if(!OR && in_OR_flag){
-			PORTL = 0x70;
-			categorize();
-		}
+
 
 		item_counter += 1;
 
-		LCDWriteIntXY(0, 1, aluminum_counter, 2);
-		LCDWriteIntXY(3, 1, steel_counter, 2);
-		LCDWriteIntXY(6, 1, white_counter, 2);
-		LCDWriteIntXY(9, 1, black_counter, 2);
+		if(MODE){
+			LCDWriteIntXY(0, 1, aluminum_counter, 2);
+			LCDWriteIntXY(3, 1, steel_counter, 2);
+			LCDWriteIntXY(6, 1, white_counter, 2);
+			LCDWriteIntXY(9, 1, black_counter, 2);
+		}
 
 		goto POLLING_STAGE;
 
@@ -264,7 +273,6 @@ int main(int argc, char *argv[]){
 		LCDWriteIntXY(3, 1, steel_counter, 2);
 		LCDWriteIntXY(6, 1, white_counter, 2);
 		LCDWriteIntXY(9, 1, black_counter, 2);
-		LCDWriteStringXY(11,0,"RAMP");
 
 		aluminum_counter = 0;
 		steel_counter = 0;
@@ -284,16 +292,32 @@ int main(int argc, char *argv[]){
 
 		brake_dc_motor();
 
-		LCDWriteIntXY(0, 1, queue_aluminum_counter, 2);
-		LCDWriteIntXY(3, 1, queue_steel_counter, 2);
-		LCDWriteIntXY(6, 1, queue_white_counter, 2);
-		LCDWriteIntXY(9, 1, queue_black_counter, 2);
-		LCDWriteStringXY(11,0,"PAUS");
+		if(MODE){
+			LCDWriteIntXY(0, 1, queue_aluminum_counter, 2);
+			LCDWriteIntXY(3, 1, queue_steel_counter, 2);
+			LCDWriteIntXY(6, 1, queue_white_counter, 2);
+			LCDWriteIntXY(9, 1, queue_black_counter, 2);
 
-		queue_aluminum_counter = 0;
-		queue_steel_counter = 0;
-		queue_white_counter = 0;
-		queue_black_counter = 0;
+			queue_aluminum_counter = 0;
+			queue_steel_counter = 0;
+			queue_white_counter = 0;
+			queue_black_counter = 0;
+			aluminum_counter = 0;
+			steel_counter = 0;
+			white_counter = 0;
+			black_counter = 0;
+			ADC_curr_min = 1023;
+			ADC_counter = 0;
+			INT0_counter = 0;
+			INT1_counter = 0;
+			INT4_counter = 0;
+			INT5_counter = 0;
+		} else {
+			ADC_curr_min = 1023;
+			ADC_max_min = 0;
+			ADC_min_min = 1023;
+
+		}
 
 		STATE = 0;
 
@@ -302,13 +326,6 @@ int main(int argc, char *argv[]){
 		disable_adc();
 		disable_dc_motor();
 		cli();
-
-		for(int i = 0; i < 10; i++){
-			PORTL = 0xF0;
-			mTimer(500);
-			PORTL = 0x00;
-			mTimer(500);
-		}
 
 	return(0);
 }
@@ -377,6 +394,7 @@ ISR(ADC_vect){ //ADC conversion done
 
 /* Sensor INT */
 ISR(INT0_vect){ // OR sensor is logic high when object in
+	enable_adc();
 	start_conversion();
 	INT0_counter += 1;
 	// LCDWriteIntXY(10,0,INT0_counter,2);
