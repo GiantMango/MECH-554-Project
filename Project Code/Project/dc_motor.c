@@ -12,11 +12,7 @@ void init_dc_motor(){
 	EIMSK |= (_BV(INT4) | _BV(INT5));
 	EICRB |= (_BV(ISC41)| _BV(ISC51));		// falling edge trigger
 
-	// GPIO
-	// DDRE &= ~(_BV(PE1) | _BV(PE0)); // used as input
-
 	DDRB |= (_BV(DDB0) | _BV(DDB1) | _BV(DDB2) | _BV(DDB3));	// set as output pins to control DC motor
-	//PORTB = (PORTB & 0xF0) | DC_Brake;							// motor driver enable pins	& brake to Vcc
 	brake_dc_motor();
 }
 

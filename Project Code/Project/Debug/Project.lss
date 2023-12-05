@@ -469,14 +469,10 @@ void init_dc_motor(){
     114c:	8a 60       	ori	r24, 0x0A	; 10
     114e:	80 83       	st	Z, r24
 
-	// GPIO
-	// DDRE &= ~(_BV(PE1) | _BV(PE0)); // used as input
-
 	DDRB |= (_BV(DDB0) | _BV(DDB1) | _BV(DDB2) | _BV(DDB3));	// set as output pins to control DC motor
     1150:	84 b1       	in	r24, 0x04	; 4
     1152:	8f 60       	ori	r24, 0x0F	; 15
     1154:	84 b9       	out	0x04, r24	; 4
-	//PORTB = (PORTB & 0xF0) | DC_Brake;							// motor driver enable pins	& brake to Vcc
 	brake_dc_motor();
     1156:	0e 94 0a 09 	call	0x1214	; 0x1214 <brake_dc_motor>
     115a:	08 95       	ret
